@@ -91,6 +91,25 @@ describe('App', () => {
     expect(screen.getByText('确认当前位置成为机器工作坐标原点后，再运行导出的 G-code。')).toBeInTheDocument();
   });
 
+  it('可以生成 Z 粗找和细调 G-code 并保存候选落笔 Z', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '下降一步并点一下' }));
+
+    expect(screen.getByDisplayValue(/Z 粗找/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '看到墨点，进入细调' }));
+
+    expect(screen.getByDisplayValue(/Z 细调/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /选第 1 条/ }));
+
+    expect(screen.getByDisplayValue('-1.35')).toBeInTheDocument();
+    expect(useProjectStore.getState().project.zCalibration.basePenDownZ).toBe(-1.35);
+  });
+
   it('显示照片标定入口和当前点选提示', () => {
     render(<App />);
 

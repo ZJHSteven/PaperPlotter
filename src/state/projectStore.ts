@@ -38,6 +38,7 @@ type ProjectStoreActions = {
   setMachineAxisReferenceAxis: (axis: 'x' | 'y') => void;
   addMachineAxisPointFromPaper: (point: PaperPoint) => void;
   resetMachineAxisLine: () => void;
+  saveBasePenDownZ: (z: number) => void;
   addTestPattern: (kind: TestPatternObject['kind']) => void;
   selectObject: (objectId?: string) => void;
   updateObject: (objectId: string, patch: Partial<DesignObject>) => void;
@@ -325,6 +326,29 @@ export const useProjectStore = create<ProjectStore>()(
                   }
                 : undefined,
               errorMessage: undefined,
+            },
+          },
+        }));
+      },
+      saveBasePenDownZ: (z) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            machine: {
+              ...state.project.machine,
+              penDownZ: z,
+            },
+            zCalibration: {
+              ...state.project.zCalibration,
+              mode: 'single-point',
+              basePenDownZ: z,
+              points: [
+                {
+                  paperX: state.project.zCalibration.testArea?.xMm ?? 20,
+                  paperY: state.project.zCalibration.testArea?.yMm ?? 20,
+                  penDownZ: z,
+                },
+              ],
             },
           },
         }));

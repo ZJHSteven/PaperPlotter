@@ -9,6 +9,7 @@ import { CalibrationPanel } from '../settings/CalibrationPanel';
 import { SvgCanvas } from './SvgCanvas';
 import { SelectionPanel } from './SelectionPanel';
 import { ZeroingGuide } from './ZeroingGuide';
+import { ZCalibrationPanel } from '../z-calibration/ZCalibrationPanel';
 
 /**
  * 编辑器主页面。
@@ -97,6 +98,8 @@ export function EditorPage() {
           <MachineSettingsPanel machine={project.machine} />
 
           <ZeroingGuide />
+
+          <ZCalibrationPanel config={project.zCalibration} machine={project.machine} />
 
           <section className="panel-section">
             <h2>导出前检查</h2>

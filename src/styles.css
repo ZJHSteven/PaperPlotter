@@ -18,7 +18,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -100,6 +101,23 @@ select {
   color: #26364f;
 }
 
+.candidate-grid {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.candidate-grid button {
+  border: 1px solid #b8d7c5;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #ecf9f0;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .full-width {
   width: 100%;
 }
@@ -164,7 +182,8 @@ select {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   border: 1px solid #cbd6e5;
   border-radius: 7px;
@@ -172,6 +191,14 @@ select {
   background: #fff;
   color: #172033;
   font-size: 14px;
+}
+
+.field textarea {
+  min-height: 140px;
+  resize: vertical;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .field-grid {

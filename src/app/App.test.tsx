@@ -157,6 +157,23 @@ describe('App', () => {
       'G-code 文件开头命令',
       'G-code 文件结尾命令',
     ]) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('暴露单点 Z 标定要求的可调参数', () => {
+    render(<App />);
+
+    for (const label of [
+      '粗找步长 mm',
+      '细调步长 mm',
+      '最大下降范围 mm',
+      '细调线数量',
+      '测试线长度 mm',
+      '测试线间距 mm',
+      '测试速度',
+      'Z 轴移动速度',
+    ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });

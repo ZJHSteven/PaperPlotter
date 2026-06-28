@@ -38,6 +38,7 @@ type ProjectStoreActions = {
   setMachineAxisReferenceAxis: (axis: 'x' | 'y') => void;
   addMachineAxisPointFromPaper: (point: PaperPoint) => void;
   resetMachineAxisLine: () => void;
+  updateZCalibrationConfig: (patch: Partial<ProjectFile['zCalibration']>) => void;
   saveBasePenDownZ: (z: number) => void;
   addTestPattern: (kind: TestPatternObject['kind']) => void;
   addTextObject: () => void;
@@ -127,6 +128,12 @@ export const useProjectStore = create<ProjectStore>()(
               ...state.project.machine,
               ...patch,
             },
+            zCalibration: patch.zPositiveDirection
+              ? {
+                  ...state.project.zCalibration,
+                  zPositiveDirection: patch.zPositiveDirection,
+                }
+              : state.project.zCalibration,
           },
         }));
       },
@@ -328,6 +335,23 @@ export const useProjectStore = create<ProjectStore>()(
                   }
                 : undefined,
               errorMessage: undefined,
+            },
+          },
+        }));
+      },
+      updateZCalibrationConfig: (patch) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            machine: patch.zPositiveDirection
+              ? {
+                  ...state.project.machine,
+                  zPositiveDirection: patch.zPositiveDirection,
+                }
+              : state.project.machine,
+            zCalibration: {
+              ...state.project.zCalibration,
+              ...patch,
             },
           },
         }));

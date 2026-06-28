@@ -2,6 +2,7 @@ import { useProjectStore } from '../../state/projectStore';
 import { PaperSettingsPanel } from '../settings/PaperSettingsPanel';
 import { MachineSettingsPanel } from '../settings/MachineSettingsPanel';
 import { SvgCanvas } from './SvgCanvas';
+import { SelectionPanel } from './SelectionPanel';
 
 /**
  * 编辑器主页面。
@@ -11,7 +12,10 @@ import { SvgCanvas } from './SvgCanvas';
  */
 export function EditorPage() {
   const project = useProjectStore((state) => state.project);
+  const selectedObjectId = useProjectStore((state) => state.selectedObjectId);
+  const addTestPattern = useProjectStore((state) => state.addTestPattern);
   const resetProject = useProjectStore((state) => state.resetProject);
+  const selectedObject = project.objects.find((object) => object.id === selectedObjectId);
 
   return (
     <main className="app-shell">
@@ -45,11 +49,25 @@ export function EditorPage() {
               <li>在外部 sender 执行 G92 X0 Y0</li>
             </ol>
           </section>
+
+          <section className="panel-section">
+            <h2>测试图案</h2>
+            <div className="button-grid">
+              <button type="button" onClick={() => addTestPattern('rectangle')}>
+                添加 20mm 方框
+              </button>
+              <button type="button" onClick={() => addTestPattern('cross')}>
+                添加十字
+              </button>
+            </div>
+          </section>
         </aside>
 
-        <SvgCanvas paper={project.paper} objects={project.objects} />
+        <SvgCanvas paper={project.paper} objects={project.objects} selectedObjectId={selectedObjectId} />
 
         <aside className="side-panel" aria-label="机器与导出设置">
+          <SelectionPanel object={selectedObject} />
+
           <MachineSettingsPanel machine={project.machine} />
 
           <section className="panel-section">

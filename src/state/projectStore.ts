@@ -1,10 +1,19 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { createDefaultProject, createPresetPaperConfig } from './defaultProject';
-import type { MachineConfig, PaperConfig, PaperPreset, ProjectFile } from '../types/project';
+import { createId } from '../utils/id';
+import type {
+  DesignObject,
+  MachineConfig,
+  PaperConfig,
+  PaperPreset,
+  ProjectFile,
+  TestPatternObject,
+} from '../types/project';
 
 type ProjectStoreState = {
   project: ProjectFile;
+  selectedObjectId?: string;
 };
 
 type ProjectStoreActions = {
@@ -12,6 +21,10 @@ type ProjectStoreActions = {
   setPaperOrientation: (orientation: PaperConfig['orientation']) => void;
   setCustomPaperSize: (widthMm: number, heightMm: number) => void;
   updateMachineConfig: (patch: Partial<MachineConfig>) => void;
+  addTestPattern: (kind: TestPatternObject['kind']) => void;
+  selectObject: (objectId?: string) => void;
+  updateObject: (objectId: string, patch: Partial<DesignObject>) => void;
+  moveObject: (objectId: string, xMm: number, yMm: number) => void;
   resetProject: () => void;
 };
 
@@ -28,6 +41,7 @@ export const useProjectStore = create<ProjectStore>()(
   persist(
     (set) => ({
       project: createDefaultProject(),
+      selectedObjectId: 'test-rectangle-20mm',
       setPaperPreset: (preset) => {
         set((state) => {
           if (preset === 'custom') {
@@ -96,8 +110,66 @@ export const useProjectStore = create<ProjectStore>()(
           },
         }));
       },
+      addTestPattern: (kind) => {
+        set((state) => {
+          const object: TestPatternObject = {
+            id: createId(`test-${kind}`),
+            type: 'test-pattern',
+            kind,
+            xMm: 30 + state.project.objects.length * 8,
+            yMm: 30 + state.project.objects.length * 8,
+            widthMm: kind === 'line-scan' ? 30 : 20,
+            heightMm: kind === 'line-scan' ? 9 : 20,
+          };
+
+          return {
+            project: {
+              ...state.project,
+              objects: [...state.project.objects, object],
+            },
+            selectedObjectId: object.id,
+          };
+        });
+      },
+      selectObject: (objectId) => {
+        set({ selectedObjectId: objectId });
+      },
+      updateObject: (objectId, patch) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            objects: state.project.objects.map((object) => {
+              if (object.id !== objectId) {
+                return object;
+              }
+
+              return normalizeDesignObject(
+                { ...object, ...patch } as DesignObject,
+                state.project.paper,
+              );
+            }),
+          },
+        }));
+      },
+      moveObject: (objectId, xMm, yMm) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            objects: state.project.objects.map((object) => {
+              if (object.id !== objectId || !('xMm' in object) || !('yMm' in object)) {
+                return object;
+              }
+
+              return normalizeDesignObject(
+                { ...object, xMm, yMm } as DesignObject,
+                state.project.paper,
+              );
+            }),
+          },
+        }));
+      },
       resetProject: () => {
-        set({ project: createDefaultProject() });
+        set({ project: createDefaultProject(), selectedObjectId: 'test-rectangle-20mm' });
       },
     }),
     {
@@ -107,3 +179,47 @@ export const useProjectStore = create<ProjectStore>()(
     },
   ),
 );
+
+/**
+ * 规范化对象坐标和尺寸。
+ *
+ * UI 拖动会产生浮点数，用户输入也可能暂时给出异常值。
+ * 这里统一做三件事：
+ * 1. 非数字值退回到 0，避免 NaN 混入项目文件；
+ * 2. 尺寸最小保留 0.1mm，避免不可见或无法导出的图案；
+ * 3. 位置限制在纸面内，避免 MVP 早期就生成明显越界路径。
+ */
+function normalizeDesignObject(object: DesignObject, paper: PaperConfig): DesignObject {
+  if (object.type !== 'test-pattern') {
+    return object;
+  }
+
+  const widthMm = normalizePositiveMm(object.widthMm, 0.1);
+  const heightMm = normalizePositiveMm(object.heightMm, 0.1);
+  const maxX = Math.max(0, paper.widthMm - widthMm);
+  const maxY = Math.max(0, paper.heightMm - heightMm);
+  const xMm = clamp(roundMm(Number(object.xMm) || 0), 0, maxX);
+  const yMm = clamp(roundMm(Number(object.yMm) || 0), 0, maxY);
+
+  return {
+    ...object,
+    xMm,
+    yMm,
+    widthMm,
+    heightMm,
+  };
+}
+
+function normalizePositiveMm(value: number, min: number) {
+  const numericValue = Number.isFinite(value) ? value : min;
+
+  return Math.max(min, roundMm(numericValue));
+}
+
+function roundMm(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}

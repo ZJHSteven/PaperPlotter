@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState, type PointerEvent } from 'react';
 import type { DesignObject, PaperConfig } from '../../types/project';
+import { useProjectStore } from '../../state/projectStore';
 import { PaperLayer } from './PaperLayer';
 import { TestPatternLayer } from './TestPatternLayer';
 
 type SvgCanvasProps = {
   paper: PaperConfig;
   objects: DesignObject[];
+  selectedObjectId?: string;
 };
 
 /**
@@ -14,15 +16,21 @@ type SvgCanvasProps = {
  * SVG 的 viewBox 直接使用毫米作为逻辑单位。
  * 这样后续路径预览和 G-code 坐标可以共用同一套纸面数据，不需要 UI 像素和毫米反复换算。
  */
-export function SvgCanvas({ paper, objects }: SvgCanvasProps) {
+export function SvgCanvas({ paper, objects, selectedObjectId }: SvgCanvasProps) {
+  const selectObject = useProjectStore((state) => state.selectObject);
+  const moveObject = useProjectStore((state) => state.moveObject);
   const paddingMm = 18;
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragStartRef = useRef<{
+    kind: 'pan' | 'object';
     pointerId: number;
     startClientX: number;
     startClientY: number;
     startPanX: number;
     startPanY: number;
+    objectId?: string;
+    objectStartX?: number;
+    objectStartY?: number;
   } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [panMm, setPanMm] = useState({ x: 0, y: 0 });
@@ -70,6 +78,7 @@ export function SvgCanvas({ paper, objects }: SvgCanvasProps) {
     }
 
     dragStartRef.current = {
+      kind: 'pan',
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
@@ -93,6 +102,15 @@ export function SvgCanvas({ paper, objects }: SvgCanvasProps) {
     const deltaX = event.clientX - dragStart.startClientX;
     const deltaY = event.clientY - dragStart.startClientY;
 
+    if (dragStart.kind === 'object' && dragStart.objectId) {
+      moveObject(
+        dragStart.objectId,
+        (dragStart.objectStartX ?? 0) + deltaX * mmPerPixelX,
+        (dragStart.objectStartY ?? 0) + deltaY * mmPerPixelY,
+      );
+      return;
+    }
+
     setPanMm({
       x: dragStart.startPanX - deltaX * mmPerPixelX,
       y: dragStart.startPanY - deltaY * mmPerPixelY,
@@ -104,6 +122,27 @@ export function SvgCanvas({ paper, objects }: SvgCanvasProps) {
       dragStartRef.current = null;
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+  }
+
+  function handleObjectPointerDown(event: PointerEvent<SVGGElement>, object: DesignObject) {
+    if (event.button !== 0 || !('xMm' in object) || !('yMm' in object)) {
+      return;
+    }
+
+    event.stopPropagation();
+    selectObject(object.id);
+    dragStartRef.current = {
+      kind: 'object',
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startPanX: panMm.x,
+      startPanY: panMm.y,
+      objectId: object.id,
+      objectStartX: object.xMm,
+      objectStartY: object.yMm,
+    };
+    svgRef.current?.setPointerCapture(event.pointerId);
   }
 
   return (
@@ -141,7 +180,12 @@ export function SvgCanvas({ paper, objects }: SvgCanvasProps) {
         >
           <PaperLayer paper={paper} />
           {objects.map((object) => (
-            <TestPatternLayer key={object.id} object={object} />
+            <TestPatternLayer
+              key={object.id}
+              object={object}
+              selected={object.id === selectedObjectId}
+              onPointerDown={(event) => handleObjectPointerDown(event, object)}
+            />
           ))}
         </svg>
       </div>

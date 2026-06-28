@@ -68,7 +68,8 @@ select {
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.button-grid button {
   border: 0;
   border-radius: 8px;
   padding: 10px 14px;
@@ -85,6 +86,17 @@ select {
 .secondary-button {
   border: 1px solid #cad5e4;
   background: #fff;
+  color: #26364f;
+}
+
+.button-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.button-grid button {
+  border: 1px solid #cad5e4;
+  background: #f8fafc;
   color: #26364f;
 }
 
@@ -163,6 +175,19 @@ select {
   color: #6b4a09;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.empty-state,
+.object-title {
+  margin: 0 0 12px;
+  color: #53657f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.object-title {
+  color: #172033;
+  font-weight: 700;
 }
 
 .canvas-panel {
@@ -266,6 +291,16 @@ select {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 0.9;
+}
+
+.test-pattern {
+  cursor: move;
+}
+
+.test-pattern--selected rect,
+.test-pattern--selected line {
+  stroke: #16a34a;
+  stroke-width: 1.2;
 }
 
 @media (max-width: 1100px) {

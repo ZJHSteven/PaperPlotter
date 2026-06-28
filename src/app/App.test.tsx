@@ -57,4 +57,17 @@ describe('App', () => {
     expect(screen.getByText('100 mm × 150 mm，SVG 坐标单位 = mm')).toBeInTheDocument();
     expect(screen.getByText('纸张尺寸：100 × 150 mm')).toBeInTheDocument();
   });
+
+  it('可以添加十字测试图案并在检查面板显示路径数量', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '添加十字' }));
+
+    expect(screen.getByText('十字')).toBeInTheDocument();
+    expect(screen.getByText('对象数量：2')).toBeInTheDocument();
+    expect(screen.getByText('十字测试图案')).toBeInTheDocument();
+    expect(screen.getByText('路径预览：当前对象会导出为 2 条折线路径。')).toBeInTheDocument();
+  });
 });

@@ -210,6 +210,27 @@ select {
   line-height: 1.5;
 }
 
+.zeroing-guide {
+  border: 1px solid #f5c451;
+  border-radius: 8px;
+  margin-top: 16px;
+  padding: 12px;
+  background: #fffbeb;
+}
+
+.zeroing-guide h2 {
+  color: #92400e;
+}
+
+.zeroing-guide code {
+  border-radius: 5px;
+  padding: 2px 5px;
+  background: #fff7d6;
+  color: #7c2d12;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 12px;
+}
+
 .meta-text,
 .error-text {
   margin: 8px 0 0;

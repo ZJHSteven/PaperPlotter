@@ -8,6 +8,7 @@ import { MachineSettingsPanel } from '../settings/MachineSettingsPanel';
 import { CalibrationPanel } from '../settings/CalibrationPanel';
 import { SvgCanvas } from './SvgCanvas';
 import { SelectionPanel } from './SelectionPanel';
+import { ZeroingGuide } from './ZeroingGuide';
 
 /**
  * 编辑器主页面。
@@ -94,6 +95,8 @@ export function EditorPage() {
           <SelectionPanel object={selectedObject} />
 
           <MachineSettingsPanel machine={project.machine} />
+
+          <ZeroingGuide />
 
           <section className="panel-section">
             <h2>导出前检查</h2>

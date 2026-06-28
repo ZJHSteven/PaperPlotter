@@ -32,6 +32,7 @@ describe('generateGcode', () => {
     expect(gcode).toContain('G21');
     expect(gcode).toContain('G90');
     expect(gcode).toContain('G92 X0 Y0');
+    expect(gcode).toContain('运行前请手动将笔头移动到纸张左上角');
     expect(gcode).toContain('G0 Z5 F1000');
     expect(gcode).toContain('G0 X10 Y20 F3000');
     expect(gcode).toContain('G1 Z-1 F500');

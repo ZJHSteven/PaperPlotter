@@ -82,6 +82,15 @@ describe('App', () => {
     expect(screen.getByText('已生成 G-code：1 条路径。')).toBeInTheDocument();
   });
 
+  it('显示运行前 G92 归零操作提示', () => {
+    render(<App />);
+
+    expect(screen.getByRole('region', { name: 'G92 归零操作提示' })).toBeInTheDocument();
+    expect(screen.getByText('手动移动笔头到纸张左上角。')).toBeInTheDocument();
+    expect(screen.getByText('G92 X0 Y0')).toBeInTheDocument();
+    expect(screen.getByText('确认当前位置成为机器工作坐标原点后，再运行导出的 G-code。')).toBeInTheDocument();
+  });
+
   it('显示照片标定入口和当前点选提示', () => {
     render(<App />);
 

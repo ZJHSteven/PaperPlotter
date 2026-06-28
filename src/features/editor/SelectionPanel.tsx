@@ -73,6 +73,16 @@ function TextSelectionPanel({ object }: { object: Extract<DesignObject, { type: 
         <span>文本内容</span>
         <textarea value={object.text} rows={3} onChange={(event) => updateObject(object.id, { text: event.target.value })} />
       </label>
+      <label className="field">
+        <span>字体来源</span>
+        <select
+          value={object.fontSource}
+          onChange={(event) => updateObject(object.id, { fontSource: event.target.value })}
+        >
+          <option value="fake-stroke">Fake Stroke Font</option>
+          <option value="basic-chinese-stroke">Basic Chinese Stroke Font</option>
+        </select>
+      </label>
       <div className="field-grid">
         <NumberField label="X mm" value={object.xMm} onChange={(value) => updateObject(object.id, { xMm: value })} />
         <NumberField label="Y mm" value={object.yMm} onChange={(value) => updateObject(object.id, { yMm: value })} />
@@ -81,7 +91,7 @@ function TextSelectionPanel({ object }: { object: Extract<DesignObject, { type: 
         <NumberField label="字号 mm" value={object.fontSizeMm} onChange={(value) => updateObject(object.id, { fontSizeMm: value })} />
         <NumberField label="字距 mm" value={object.letterSpacingMm} onChange={(value) => updateObject(object.id, { letterSpacingMm: value })} />
       </div>
-      <p className="hint">当前使用 Fake Stroke Font，只用于验证单线路径闭环。</p>
+      <p className="hint">当前字体输出单线 stroke paths，不使用空心轮廓字形。</p>
     </section>
   );
 }

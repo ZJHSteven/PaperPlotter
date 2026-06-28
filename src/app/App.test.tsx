@@ -85,6 +85,19 @@ describe('App', () => {
     expect(screen.getByText('可导出路径：9')).toBeInTheDocument();
   });
 
+  it('可以添加中文示例并使用中文单线 provider', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '添加中文示例' }));
+
+    expect(screen.getByDisplayValue('实验报告')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '字体来源' })).toHaveValue('basic-chinese-stroke');
+    expect(screen.getByText('文本：实验报告')).toBeInTheDocument();
+    expect(screen.getByText('可导出路径：24')).toBeInTheDocument();
+  });
+
   it('点击导出按钮后显示已生成 G-code 状态', async () => {
     const user = userEvent.setup();
 
@@ -119,8 +132,33 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: /选第 1 条/ }));
 
-    expect(screen.getByDisplayValue('-1.35')).toBeInTheDocument();
+    expect(screen.getByLabelText('已保存落笔 Z')).toHaveValue('-1.35');
     expect(useProjectStore.getState().project.zCalibration.basePenDownZ).toBe(-1.35);
+    expect(useProjectStore.getState().project.machine.penDownZ).toBe(-1.35);
+  });
+
+  it('暴露 MVP 要求的关键机器参数设置', () => {
+    render(<App />);
+
+    for (const label of [
+      '工作区宽 mm',
+      '工作区高 mm',
+      'Y 轴方向',
+      'Z 轴正方向',
+      '空走速度',
+      '绘制速度',
+      '测试写字速度',
+      'Z 抬笔速度',
+      'Z 落笔速度',
+      '抬笔高度',
+      '落笔高度',
+      '抬笔命令模板',
+      '落笔命令模板',
+      'G-code 文件开头命令',
+      'G-code 文件结尾命令',
+    ]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
   });
 
   it('显示照片标定入口和当前点选提示', () => {

@@ -1,6 +1,6 @@
 import type { PointerEvent } from 'react';
 import type { DesignObject, TestPatternObject } from '../../types/project';
-import { FakeStrokeFontProvider } from '../fonts/FakeStrokeFontProvider';
+import { getStrokeFontProvider } from '../fonts/StrokeFontProvider';
 import { textObjectToPaths } from '../paths/textToPaths';
 
 type TestPatternLayerProps = {
@@ -44,7 +44,7 @@ function TextPattern({
   selected: boolean;
   onPointerDown: (event: PointerEvent<SVGGElement>) => void;
 }) {
-  const paths = textObjectToPaths(object, FakeStrokeFontProvider);
+  const paths = textObjectToPaths(object, getStrokeFontProvider(object.fontSource));
 
   return (
     <g

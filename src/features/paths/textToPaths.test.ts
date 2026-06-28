@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FakeStrokeFontProvider } from '../fonts/FakeStrokeFontProvider';
+import { BasicChineseStrokeFontProvider } from '../fonts/BasicChineseStrokeFontProvider';
 import { textObjectToPaths } from './textToPaths';
 import type { TextObject } from '../../types/project';
 
@@ -33,5 +34,19 @@ describe('textObjectToPaths', () => {
   it('空文本或非法字号不生成路径', () => {
     expect(textObjectToPaths(makeTextObject({ text: '' }), FakeStrokeFontProvider)).toEqual([]);
     expect(textObjectToPaths(makeTextObject({ fontSizeMm: 0 }), FakeStrokeFontProvider)).toEqual([]);
+  });
+
+  it('支持内置中文单线 provider', () => {
+    const paths = textObjectToPaths(
+      makeTextObject({
+        text: '你好',
+        fontSource: 'basic-chinese-stroke',
+      }),
+      BasicChineseStrokeFontProvider,
+    );
+
+    expect(BasicChineseStrokeFontProvider.supportsChar('你')).toBe(true);
+    expect(BasicChineseStrokeFontProvider.supportsChar('好')).toBe(true);
+    expect(paths.length).toBeGreaterThan(8);
   });
 });

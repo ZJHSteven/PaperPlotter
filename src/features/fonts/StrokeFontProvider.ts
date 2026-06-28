@@ -1,4 +1,6 @@
 import type { Glyph } from './glyphTypes';
+import { BasicChineseStrokeFontProvider } from './BasicChineseStrokeFontProvider';
+import { FakeStrokeFontProvider } from './FakeStrokeFontProvider';
 
 /**
  * 单线字体 provider 接口。
@@ -11,4 +13,12 @@ export interface StrokeFontProvider {
   name: string;
   supportsChar(char: string): boolean;
   getGlyph(char: string): Glyph | null;
+}
+
+export function getStrokeFontProvider(fontSource: string): StrokeFontProvider {
+  if (fontSource === BasicChineseStrokeFontProvider.id) {
+    return BasicChineseStrokeFontProvider;
+  }
+
+  return FakeStrokeFontProvider;
 }

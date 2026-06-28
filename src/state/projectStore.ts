@@ -41,6 +41,7 @@ type ProjectStoreActions = {
   saveBasePenDownZ: (z: number) => void;
   addTestPattern: (kind: TestPatternObject['kind']) => void;
   addTextObject: () => void;
+  addChineseSampleTextObject: () => void;
   selectObject: (objectId?: string) => void;
   updateObject: (objectId: string, patch: Partial<DesignObject>) => void;
   moveObject: (objectId: string, xMm: number, yMm: number) => void;
@@ -389,6 +390,32 @@ export const useProjectStore = create<ProjectStore>()(
             fontSizeMm: 10,
             letterSpacingMm: 1,
             lineHeightMm: 12,
+            writingMode: 'horizontal' as const,
+          };
+
+          return {
+            project: {
+              ...state.project,
+              objects: [...state.project.objects, object],
+            },
+            selectedObjectId: object.id,
+          };
+        });
+      },
+      addChineseSampleTextObject: () => {
+        set((state) => {
+          const object = {
+            id: createId('text-zh'),
+            type: 'text' as const,
+            xMm: 30,
+            yMm: 95,
+            widthMm: 120,
+            rotationDeg: 0,
+            text: '实验报告',
+            fontSource: 'basic-chinese-stroke',
+            fontSizeMm: 12,
+            letterSpacingMm: 2,
+            lineHeightMm: 16,
             writingMode: 'horizontal' as const,
           };
 

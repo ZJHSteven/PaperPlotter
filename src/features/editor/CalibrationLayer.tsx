@@ -28,6 +28,14 @@ export function CalibrationLayer({
   const imageWidth = calibrationMode ? calibration.imageSizePx?.width ?? paperWidthMm : paperWidthMm;
   const imageHeight = calibrationMode ? calibration.imageSizePx?.height ?? paperHeightMm : paperHeightMm;
   const displayImageUrl = calibrationMode ? calibration.imageUrl : correctedImageUrl ?? calibration.imageUrl;
+  const machineAxisLine = calibration.machineAxisLinePx ??
+    (calibration.machineAxisLineDraftPx?.p1
+      ? {
+          p1: calibration.machineAxisLineDraftPx.p1,
+          p2: calibration.machineAxisLineDraftPx.p2,
+          axis: calibration.machineAxisLineDraftPx.axis,
+        }
+      : undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,6 +113,46 @@ export function CalibrationLayer({
             },
           )
         : null}
+
+      {!calibrationMode && calibration.result && machineAxisLine ? (
+        <MachineAxisLine calibration={calibration} line={machineAxisLine} />
+      ) : null}
+    </g>
+  );
+}
+
+function MachineAxisLine({
+  calibration,
+  line,
+}: {
+  calibration: CalibrationConfig;
+  line: {
+    p1: { x: number; y: number };
+    p2?: { x: number; y: number };
+    axis: 'x' | 'y';
+  };
+}) {
+  const p1 = applyHomographyToPoint(line.p1, calibration.result!.imageToPaperMatrix);
+  const p2 = line.p2
+    ? applyHomographyToPoint(line.p2, calibration.result!.imageToPaperMatrix)
+    : undefined;
+
+  return (
+    <g className="machine-axis-marker" aria-label="机器参考线">
+      <circle cx={p1.x} cy={p1.y} r={2} />
+      {p2 ? (
+        <>
+          <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} />
+          <circle cx={p2.x} cy={p2.y} r={2} />
+          <text x={(p1.x + p2.x) / 2 + 3} y={(p1.y + p2.y) / 2 - 3}>
+            机器 {line.axis.toUpperCase()} 参考线
+          </text>
+        </>
+      ) : (
+        <text x={p1.x + 3} y={p1.y - 3}>
+          参考线起点
+        </text>
+      )}
     </g>
   );
 }

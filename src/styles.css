@@ -141,6 +141,19 @@ select {
   line-height: 1.2;
 }
 
+.sub-panel {
+  border-top: 1px solid #e6edf5;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+.sub-panel h3 {
+  margin: 0 0 10px;
+  color: #172033;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -316,6 +329,24 @@ select {
 
 .corner-marker text {
   fill: #9a3412;
+  font-size: 4px;
+  font-weight: 700;
+}
+
+.machine-axis-marker line {
+  stroke: #dc2626;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+.machine-axis-marker circle {
+  fill: #dc2626;
+  stroke: #fff;
+  stroke-width: 0.7;
+}
+
+.machine-axis-marker text {
+  fill: #991b1b;
   font-size: 4px;
   font-weight: 700;
 }

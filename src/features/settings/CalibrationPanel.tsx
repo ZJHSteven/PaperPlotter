@@ -21,9 +21,13 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const setCalibrationImageUrl = useProjectStore((state) => state.setCalibrationImageUrl);
   const resetPaperCorners = useProjectStore((state) => state.resetPaperCorners);
+  const setMachineAxisReferenceAxis = useProjectStore((state) => state.setMachineAxisReferenceAxis);
+  const resetMachineAxisLine = useProjectStore((state) => state.resetMachineAxisLine);
   const nextCornerKey = getNextPaperCornerKey(calibration.paperCornersPx);
   const cornerCount = getPaperCornerCount(calibration.paperCornersPx);
   const showDevTestImageButton = import.meta.env.MODE !== 'production';
+  const machineAxisDraft = calibration.machineAxisLineDraftPx ?? { axis: 'x' as const };
+  const machineAxisPointCount = Number(Boolean(machineAxisDraft.p1)) + Number(Boolean(machineAxisDraft.p2));
 
   function handleFileChange(file?: File) {
     if (!file) {
@@ -83,6 +87,32 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
         <button className="secondary-button full-width" type="button" onClick={resetPaperCorners}>
           重置纸角
         </button>
+      ) : null}
+
+      {calibration.result ? (
+        <div className="sub-panel">
+          <h3>机器参考线</h3>
+          <label className="field">
+            <span>参考线代表</span>
+            <select
+              value={machineAxisDraft.axis}
+              onChange={(event) => setMachineAxisReferenceAxis(event.target.value as 'x' | 'y')}
+            >
+              <option value="x">机器 X 轴</option>
+              <option value="y">机器 Y 轴</option>
+            </select>
+          </label>
+          <p className="hint">
+            {calibration.machineAxisLinePx
+              ? '机器参考线已标定，已写入纸面到机器方向映射。'
+              : `请在纸面预览中点击机器参考线两端（${machineAxisPointCount}/2）。`}
+          </p>
+          {calibration.machineAxisLineDraftPx || calibration.machineAxisLinePx ? (
+            <button className="secondary-button full-width" type="button" onClick={resetMachineAxisLine}>
+              重置机器参考线
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

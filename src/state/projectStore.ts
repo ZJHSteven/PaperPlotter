@@ -11,8 +11,16 @@ import type {
   ProjectFile,
   TestPatternObject,
 } from '../types/project';
-import type { ImagePoint } from '../types/geometry';
-import { computeImageToPaperTransform } from '../features/calibration/paperHomography';
+import type { ImagePoint, PaperPoint } from '../types/geometry';
+import {
+  applyHomographyToPoint,
+  computeImageToPaperTransform,
+  invertHomography,
+} from '../features/calibration/paperHomography';
+import {
+  computeMachineAxisInPaper,
+  createPaperToMachineMatrix,
+} from '../features/calibration/machineAxis';
 
 type ProjectStoreState = {
   project: ProjectFile;
@@ -27,6 +35,9 @@ type ProjectStoreActions = {
   setCalibrationImageUrl: (imageUrl: string, imageSizePx: { width: number; height: number }) => void;
   addPaperCornerPoint: (point: ImagePoint) => void;
   resetPaperCorners: () => void;
+  setMachineAxisReferenceAxis: (axis: 'x' | 'y') => void;
+  addMachineAxisPointFromPaper: (point: PaperPoint) => void;
+  resetMachineAxisLine: () => void;
   addTestPattern: (kind: TestPatternObject['kind']) => void;
   selectObject: (objectId?: string) => void;
   updateObject: (objectId: string, patch: Partial<DesignObject>) => void;
@@ -125,6 +136,8 @@ export const useProjectStore = create<ProjectStore>()(
               imageUrl,
               imageSizePx,
               paperCornersPx: undefined,
+              machineAxisLineDraftPx: undefined,
+              machineAxisLinePx: undefined,
               result: undefined,
               errorMessage: undefined,
             },
@@ -194,7 +207,123 @@ export const useProjectStore = create<ProjectStore>()(
             calibration: {
               ...state.project.calibration,
               paperCornersPx: undefined,
+              machineAxisLineDraftPx: undefined,
+              machineAxisLinePx: undefined,
               result: undefined,
+              errorMessage: undefined,
+            },
+          },
+        }));
+      },
+      setMachineAxisReferenceAxis: (axis) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            calibration: {
+              ...state.project.calibration,
+              machineAxisLineDraftPx: {
+                axis,
+              },
+              machineAxisLinePx: undefined,
+            },
+          },
+        }));
+      },
+      addMachineAxisPointFromPaper: (point) => {
+        set((state) => {
+          const calibration = state.project.calibration;
+
+          if (!calibration.result) {
+            return state;
+          }
+
+          try {
+            const paperToImageMatrix = invertHomography(calibration.result.imageToPaperMatrix);
+            const imagePoint = applyHomographyToPoint(point, paperToImageMatrix);
+            const draft = calibration.machineAxisLineDraftPx ?? { axis: 'x' as const };
+            const nextDraft = !draft.p1
+              ? { ...draft, p1: imagePoint }
+              : !draft.p2
+                ? { ...draft, p2: imagePoint }
+                : { axis: draft.axis, p1: imagePoint };
+
+            if (!nextDraft.p1 || !nextDraft.p2) {
+              return {
+                project: {
+                  ...state.project,
+                  calibration: {
+                    ...calibration,
+                    machineAxisLineDraftPx: nextDraft,
+                    machineAxisLinePx: undefined,
+                    errorMessage: undefined,
+                  },
+                },
+              };
+            }
+
+            const machineAxisLinePx = {
+              p1: nextDraft.p1,
+              p2: nextDraft.p2,
+              axis: nextDraft.axis,
+            };
+            const machineAxis = computeMachineAxisInPaper(machineAxisLinePx, calibration.result);
+            const paperToMachineMatrix = createPaperToMachineMatrix(
+              machineAxis.machineXAxisDirection,
+              state.project.machine,
+            );
+
+            return {
+              project: {
+                ...state.project,
+                calibration: {
+                  ...calibration,
+                  machineAxisLineDraftPx: nextDraft,
+                  machineAxisLinePx,
+                  result: {
+                    ...calibration.result,
+                    machineAxisAngleRad: machineAxis.angleRad,
+                    paperToMachineMatrix,
+                    calibratedAt: Date.now(),
+                  },
+                  errorMessage: undefined,
+                },
+              },
+            };
+          } catch (error) {
+            return {
+              project: {
+                ...state.project,
+                calibration: {
+                  ...calibration,
+                  errorMessage: error instanceof Error ? error.message : '机器参考线标定失败。',
+                },
+              },
+            };
+          }
+        });
+      },
+      resetMachineAxisLine: () => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            calibration: {
+              ...state.project.calibration,
+              machineAxisLineDraftPx: undefined,
+              machineAxisLinePx: undefined,
+              result: state.project.calibration.result
+                ? {
+                    ...state.project.calibration.result,
+                    machineAxisAngleRad: 0,
+                    paperToMachineMatrix: {
+                      a: 1,
+                      b: 0,
+                      c: 0,
+                      d: 1,
+                      e: 0,
+                      f: 0,
+                    },
+                  }
+                : undefined,
               errorMessage: undefined,
             },
           },

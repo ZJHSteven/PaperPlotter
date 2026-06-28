@@ -22,6 +22,7 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
   const selectObject = useProjectStore((state) => state.selectObject);
   const moveObject = useProjectStore((state) => state.moveObject);
   const addPaperCornerPoint = useProjectStore((state) => state.addPaperCornerPoint);
+  const addMachineAxisPointFromPaper = useProjectStore((state) => state.addMachineAxisPointFromPaper);
   const paddingMm = 18;
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragStartRef = useRef<{
@@ -141,15 +142,18 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
   }
 
   function handleCanvasClick(event: PointerEvent<SVGSVGElement>) {
-    if (!calibrationMode) {
-      return;
-    }
-
     if ((event.target as Element).closest('.test-pattern')) {
       return;
     }
 
-    addPaperCornerPoint(clientPointToSvgPoint(event));
+    if (calibrationMode) {
+      addPaperCornerPoint(clientPointToSvgPoint(event));
+      return;
+    }
+
+    if (calibration.result && !calibration.machineAxisLinePx) {
+      addMachineAxisPointFromPaper(clientPointToSvgPoint(event));
+    }
   }
 
   function handleObjectPointerDown(event: PointerEvent<SVGGElement>, object: DesignObject) {

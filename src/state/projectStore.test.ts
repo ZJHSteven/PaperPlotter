@@ -52,4 +52,31 @@ describe('useProjectStore', () => {
     });
     expect(calibration.result?.imageToPaperMatrix).toHaveLength(9);
   });
+
+  it('四角标定后可以点选机器参考线并写入机器方向映射', () => {
+    const store = useProjectStore.getState();
+
+    store.setCalibrationImageUrl('data:image/png;base64,stub', { width: 210, height: 297 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 0, y: 0 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 210, y: 0 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 210, y: 297 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 0, y: 297 });
+    useProjectStore.getState().setMachineAxisReferenceAxis('x');
+    useProjectStore.getState().addMachineAxisPointFromPaper({ x: 10, y: 20 });
+    useProjectStore.getState().addMachineAxisPointFromPaper({ x: 110, y: 20 });
+
+    const calibration = useProjectStore.getState().project.calibration;
+
+    expect(calibration.machineAxisLinePx).toMatchObject({
+      axis: 'x',
+      p1: { x: 10, y: 20 },
+      p2: { x: 110, y: 20 },
+    });
+    expect(calibration.result?.machineAxisAngleRad).toBeCloseTo(0, 6);
+    expect(calibration.result?.paperToMachineMatrix).toMatchObject({
+      a: 1,
+      c: 0,
+      d: 1,
+    });
+  });
 });

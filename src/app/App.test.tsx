@@ -117,6 +117,8 @@ describe('App', () => {
 
     expect(screen.getByText('210 mm × 297 mm，SVG 坐标单位 = mm')).toBeInTheDocument();
     expect(screen.getByText('四个纸角已点完，已计算 imageToPaper 透视矩阵。')).toBeInTheDocument();
+    expect(screen.getByText('机器参考线')).toBeInTheDocument();
+    expect(screen.getByText('请在纸面预览中点击机器参考线两端（0/2）。')).toBeInTheDocument();
     expect(useProjectStore.getState().project.calibration.result?.imageToPaperMatrix).toHaveLength(9);
   });
 });

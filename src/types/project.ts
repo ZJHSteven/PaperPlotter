@@ -51,6 +51,11 @@ export type CalibrationConfig = {
     height: number;
   };
   paperCornersPx?: PaperCornersPx;
+  machineAxisLineDraftPx?: {
+    p1?: ImagePoint;
+    p2?: ImagePoint;
+    axis: 'x' | 'y';
+  };
   machineAxisLinePx?: MachineAxisLinePx;
   originOnPaper: 'top-left';
   result?: CalibrationResult;

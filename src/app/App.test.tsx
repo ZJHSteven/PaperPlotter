@@ -27,4 +27,34 @@ describe('App', () => {
 
     expect(screen.getByText('297 mm × 210 mm，SVG 坐标单位 = mm')).toBeInTheDocument();
   });
+
+  it('支持通过视图工具缩放并重置 SVG 画布', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    expect(screen.getByText('100%')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '放大画布' }));
+
+    expect(screen.getByText('125%')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '重置视图' }));
+
+    expect(screen.getByText('100%')).toBeInTheDocument();
+  });
+
+  it('自定义纸张尺寸后画布和导出检查同步显示新尺寸', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.clear(screen.getByRole('spinbutton', { name: '宽度 mm' }));
+    await user.type(screen.getByRole('spinbutton', { name: '宽度 mm' }), '100');
+    await user.clear(screen.getByRole('spinbutton', { name: '高度 mm' }));
+    await user.type(screen.getByRole('spinbutton', { name: '高度 mm' }), '150');
+
+    expect(screen.getByText('100 mm × 150 mm，SVG 坐标单位 = mm')).toBeInTheDocument();
+    expect(screen.getByText('纸张尺寸：100 × 150 mm')).toBeInTheDocument();
+  });
 });

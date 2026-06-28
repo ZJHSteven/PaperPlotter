@@ -14,7 +14,6 @@
 
 body {
   margin: 0;
-  min-width: 1120px;
 }
 
 button,
@@ -34,6 +33,7 @@ select {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .top-bar h1 {
@@ -90,7 +90,7 @@ select {
 
 .workspace {
   display: grid;
-  grid-template-columns: 300px minmax(520px, 1fr) 320px;
+  grid-template-columns: minmax(250px, 300px) minmax(420px, 1fr) minmax(260px, 320px);
   gap: 14px;
   min-height: calc(100vh - 92px);
 }
@@ -186,13 +186,25 @@ select {
   font-size: 13px;
 }
 
+.canvas-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.canvas-tools button,
 .canvas-scale {
   border: 1px solid #ccd7e4;
   border-radius: 7px;
   padding: 6px 10px;
+  background: #fff;
   color: #34455f;
   font-size: 13px;
   font-weight: 700;
+}
+
+.canvas-tools button {
+  cursor: pointer;
 }
 
 .canvas-viewport {
@@ -210,6 +222,13 @@ select {
   width: 100%;
   height: 100%;
   min-height: 620px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.paper-svg:active {
+  cursor: grabbing;
 }
 
 .paper-shadow {
@@ -247,4 +266,50 @@ select {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 0.9;
+}
+
+@media (max-width: 1100px) {
+  .app-shell {
+    padding: 12px;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .side-panel {
+    overflow: visible;
+  }
+
+  .paper-svg {
+    min-height: 520px;
+  }
+}
+
+@media (max-width: 640px) {
+  .top-bar__actions,
+  .canvas-panel__header,
+  .canvas-tools,
+  .field-grid {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .top-bar__actions {
+    width: 100%;
+  }
+
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+  }
+
+  .canvas-panel__header {
+    gap: 10px;
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 }

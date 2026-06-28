@@ -32,4 +32,24 @@ describe('useProjectStore', () => {
       yMm: 0,
     });
   });
+
+  it('依次添加四个纸角后生成 imageToPaper 标定结果', () => {
+    const store = useProjectStore.getState();
+
+    store.setCalibrationImageUrl('data:image/png;base64,stub');
+    useProjectStore.getState().addPaperCornerPoint({ x: 0, y: 0 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 210, y: 0 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 210, y: 297 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 0, y: 297 });
+
+    const calibration = useProjectStore.getState().project.calibration;
+
+    expect(calibration.paperCornersPx).toMatchObject({
+      topLeft: { x: 0, y: 0 },
+      topRight: { x: 210, y: 0 },
+      bottomRight: { x: 210, y: 297 },
+      bottomLeft: { x: 0, y: 297 },
+    });
+    expect(calibration.result?.imageToPaperMatrix).toHaveLength(9);
+  });
 });

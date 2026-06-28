@@ -81,4 +81,11 @@ describe('App', () => {
 
     expect(screen.getByText('已生成 G-code：1 条路径。')).toBeInTheDocument();
   });
+
+  it('显示照片标定入口和当前点选提示', () => {
+    render(<App />);
+
+    expect(screen.getByRole('button', { name: '导入纸张照片' })).toBeInTheDocument();
+    expect(screen.getByText('先导入一张纸张照片，再按左上、右上、右下、左下点选四角。')).toBeInTheDocument();
+  });
 });

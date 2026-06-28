@@ -6,10 +6,13 @@ import type {
   DesignObject,
   MachineConfig,
   PaperConfig,
+  PaperCornersPx,
   PaperPreset,
   ProjectFile,
   TestPatternObject,
 } from '../types/project';
+import type { ImagePoint } from '../types/geometry';
+import { computeImageToPaperTransform } from '../features/calibration/paperHomography';
 
 type ProjectStoreState = {
   project: ProjectFile;
@@ -21,6 +24,9 @@ type ProjectStoreActions = {
   setPaperOrientation: (orientation: PaperConfig['orientation']) => void;
   setCustomPaperSize: (widthMm: number, heightMm: number) => void;
   updateMachineConfig: (patch: Partial<MachineConfig>) => void;
+  setCalibrationImageUrl: (imageUrl: string) => void;
+  addPaperCornerPoint: (point: ImagePoint) => void;
+  resetPaperCorners: () => void;
   addTestPattern: (kind: TestPatternObject['kind']) => void;
   selectObject: (objectId?: string) => void;
   updateObject: (objectId: string, patch: Partial<DesignObject>) => void;
@@ -110,6 +116,72 @@ export const useProjectStore = create<ProjectStore>()(
           },
         }));
       },
+      setCalibrationImageUrl: (imageUrl) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            calibration: {
+              ...state.project.calibration,
+              imageUrl,
+              paperCornersPx: undefined,
+              result: undefined,
+            },
+          },
+        }));
+      },
+      addPaperCornerPoint: (point) => {
+        set((state) => {
+          const nextCorners = addCornerToDraft(state.project.calibration.paperCornersPx, point);
+          const hasAllCorners = Boolean(
+            nextCorners.topLeft &&
+              nextCorners.topRight &&
+              nextCorners.bottomRight &&
+              nextCorners.bottomLeft,
+          );
+          const result = hasAllCorners
+            ? {
+                imageToPaperMatrix: computeImageToPaperTransform(
+                  nextCorners as PaperCornersPx,
+                  state.project.paper.widthMm,
+                  state.project.paper.heightMm,
+                ),
+                machineAxisAngleRad: 0,
+                paperToMachineMatrix: {
+                  a: 1,
+                  b: 0,
+                  c: 0,
+                  d: 1,
+                  e: 0,
+                  f: 0,
+                },
+                calibratedAt: Date.now(),
+              }
+            : undefined;
+
+          return {
+            project: {
+              ...state.project,
+              calibration: {
+                ...state.project.calibration,
+                paperCornersPx: nextCorners as PaperCornersPx,
+                result,
+              },
+            },
+          };
+        });
+      },
+      resetPaperCorners: () => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            calibration: {
+              ...state.project.calibration,
+              paperCornersPx: undefined,
+              result: undefined,
+            },
+          },
+        }));
+      },
       addTestPattern: (kind) => {
         set((state) => {
           const object: TestPatternObject = {
@@ -179,6 +251,31 @@ export const useProjectStore = create<ProjectStore>()(
     },
   ),
 );
+
+function addCornerToDraft(
+  current: Partial<PaperCornersPx> | undefined,
+  point: ImagePoint,
+): Partial<PaperCornersPx> {
+  const draft = current ?? {};
+
+  if (!draft.topLeft) {
+    return { ...draft, topLeft: point };
+  }
+
+  if (!draft.topRight) {
+    return { ...draft, topRight: point };
+  }
+
+  if (!draft.bottomRight) {
+    return { ...draft, bottomRight: point };
+  }
+
+  if (!draft.bottomLeft) {
+    return { ...draft, bottomLeft: point };
+  }
+
+  return { topLeft: point };
+}
 
 /**
  * 规范化对象坐标和尺寸。

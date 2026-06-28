@@ -5,6 +5,7 @@ import { projectToGcodeJob } from '../gcode/projectToGcode';
 import { validateGcodeJob } from '../gcode/safetyCheck';
 import { PaperSettingsPanel } from '../settings/PaperSettingsPanel';
 import { MachineSettingsPanel } from '../settings/MachineSettingsPanel';
+import { CalibrationPanel } from '../settings/CalibrationPanel';
 import { SvgCanvas } from './SvgCanvas';
 import { SelectionPanel } from './SelectionPanel';
 
@@ -56,6 +57,7 @@ export function EditorPage() {
       <section className="workspace" aria-label="PaperPlotter 编辑器工作区">
         <aside className="side-panel" aria-label="纸张与标定设置">
           <PaperSettingsPanel paper={project.paper} />
+          <CalibrationPanel calibration={project.calibration} />
 
           <section className="panel-section">
             <h2>标定流程</h2>
@@ -81,7 +83,12 @@ export function EditorPage() {
           </section>
         </aside>
 
-        <SvgCanvas paper={project.paper} objects={project.objects} selectedObjectId={selectedObjectId} />
+        <SvgCanvas
+          paper={project.paper}
+          calibration={project.calibration}
+          objects={project.objects}
+          selectedObjectId={selectedObjectId}
+        />
 
         <aside className="side-panel" aria-label="机器与导出设置">
           <SelectionPanel object={selectedObject} />

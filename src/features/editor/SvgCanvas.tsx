@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState, type PointerEvent } from 'react';
-import type { DesignObject, PaperConfig } from '../../types/project';
+import type { CalibrationConfig, DesignObject, PaperConfig } from '../../types/project';
 import { useProjectStore } from '../../state/projectStore';
 import { PaperLayer } from './PaperLayer';
 import { TestPatternLayer } from './TestPatternLayer';
+import { CalibrationLayer } from './CalibrationLayer';
 
 type SvgCanvasProps = {
   paper: PaperConfig;
+  calibration: CalibrationConfig;
   objects: DesignObject[];
   selectedObjectId?: string;
 };
@@ -16,9 +18,10 @@ type SvgCanvasProps = {
  * SVG 的 viewBox 直接使用毫米作为逻辑单位。
  * 这样后续路径预览和 G-code 坐标可以共用同一套纸面数据，不需要 UI 像素和毫米反复换算。
  */
-export function SvgCanvas({ paper, objects, selectedObjectId }: SvgCanvasProps) {
+export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: SvgCanvasProps) {
   const selectObject = useProjectStore((state) => state.selectObject);
   const moveObject = useProjectStore((state) => state.moveObject);
+  const addPaperCornerPoint = useProjectStore((state) => state.addPaperCornerPoint);
   const paddingMm = 18;
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragStartRef = useRef<{
@@ -124,6 +127,18 @@ export function SvgCanvas({ paper, objects, selectedObjectId }: SvgCanvasProps) 
     }
   }
 
+  function handleCanvasClick(event: PointerEvent<SVGSVGElement>) {
+    if (!calibration.imageUrl || calibration.result) {
+      return;
+    }
+
+    if ((event.target as Element).closest('.test-pattern')) {
+      return;
+    }
+
+    addPaperCornerPoint(clientPointToSvgPoint(event));
+  }
+
   function handleObjectPointerDown(event: PointerEvent<SVGGElement>, object: DesignObject) {
     if (event.button !== 0 || !('xMm' in object) || !('yMm' in object)) {
       return;
@@ -177,8 +192,14 @@ export function SvgCanvas({ paper, objects, selectedObjectId }: SvgCanvasProps) 
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
+          onClick={handleCanvasClick}
         >
           <PaperLayer paper={paper} />
+          <CalibrationLayer
+            calibration={calibration}
+            paperWidthMm={paper.widthMm}
+            paperHeightMm={paper.heightMm}
+          />
           {objects.map((object) => (
             <TestPatternLayer
               key={object.id}
@@ -191,6 +212,19 @@ export function SvgCanvas({ paper, objects, selectedObjectId }: SvgCanvasProps) 
       </div>
     </section>
   );
+}
+
+function clientPointToSvgPoint(event: PointerEvent<SVGSVGElement>) {
+  const svgElement = event.currentTarget;
+  const svgPoint = svgElement.createSVGPoint();
+  svgPoint.x = event.clientX;
+  svgPoint.y = event.clientY;
+  const transformedPoint = svgPoint.matrixTransform(svgElement.getScreenCTM()?.inverse());
+
+  return {
+    x: Math.round(transformedPoint.x * 100) / 100,
+    y: Math.round(transformedPoint.y * 100) / 100,
+  };
 }
 
 /**

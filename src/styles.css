@@ -100,6 +100,14 @@ select {
   color: #26364f;
 }
 
+.full-width {
+  width: 100%;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: minmax(250px, 300px) minmax(420px, 1fr) minmax(260px, 320px);
@@ -278,6 +286,23 @@ select {
   fill: #fff;
   stroke: #1f2a44;
   stroke-width: 0.5;
+}
+
+.calibration-image {
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.corner-marker circle {
+  fill: #f97316;
+  stroke: #fff;
+  stroke-width: 0.8;
+}
+
+.corner-marker text {
+  fill: #9a3412;
+  font-size: 4px;
+  font-weight: 700;
 }
 
 .grid-line {

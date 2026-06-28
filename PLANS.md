@@ -2,13 +2,14 @@
 
 ## 当前阶段
 
-- 阶段：第 1 步，搭建 Vite + React + TypeScript 项目骨架。
-- 当前目标：让项目能安装依赖、启动开发服务器、渲染空白编辑器工作台，并保存基础 project state。
-- 验收标准：`npm run typecheck`、`npm run test`、`npm run build` 通过；浏览器能打开主界面。
+- 阶段：第 2 步，SVG 纸张画布。
+- 当前目标：在第 1 步可运行骨架基础上，完善纸张矩形、A4/自定义尺寸、缩放和平移查看。
+- 已通过验收：第 1 步已完成，`npm run typecheck`、`npm run test`、`npm run build` 全部通过；基础编辑器工作台和 project state 已实现。
+- 下一验收标准：A4 纸比例正确；纸张尺寸配置变化后 UI 正确变化；画布支持基础缩放和平移。
 
 ## 分阶段任务
 
-1. 项目骨架
+1. 项目骨架（已完成）
    - 建立 Vite/React/TypeScript 基础配置。
    - 建立 `src/types`、`src/state`、`src/features` 的目录边界。
    - 实现默认 ProjectFile 状态和基础 App 布局。

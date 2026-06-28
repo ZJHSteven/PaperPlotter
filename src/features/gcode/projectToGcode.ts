@@ -1,4 +1,6 @@
 import { testPatternToPaths } from '../paths/testPatternToPaths';
+import { textObjectToPaths } from '../paths/textToPaths';
+import { FakeStrokeFontProvider } from '../fonts/FakeStrokeFontProvider';
 import type { GcodeJob } from './gcodeTypes';
 import type { ProjectFile } from '../../types/project';
 
@@ -12,6 +14,10 @@ export function projectToGcodeJob(project: ProjectFile): GcodeJob {
   const paths = project.objects.flatMap((object) => {
     if (object.type === 'test-pattern') {
       return testPatternToPaths(object);
+    }
+
+    if (object.type === 'text') {
+      return textObjectToPaths(object, FakeStrokeFontProvider);
     }
 
     return [];

@@ -416,7 +416,8 @@ textarea {
 }
 
 .test-pattern rect,
-.test-pattern line {
+.test-pattern line,
+.test-pattern polyline {
   fill: none;
   stroke: #2563eb;
   stroke-linecap: round;
@@ -429,7 +430,8 @@ textarea {
 }
 
 .test-pattern--selected rect,
-.test-pattern--selected line {
+.test-pattern--selected line,
+.test-pattern--selected polyline {
   stroke: #16a34a;
   stroke-width: 1.2;
 }

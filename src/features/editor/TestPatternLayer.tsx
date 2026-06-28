@@ -1,5 +1,7 @@
 import type { PointerEvent } from 'react';
 import type { DesignObject, TestPatternObject } from '../../types/project';
+import { FakeStrokeFontProvider } from '../fonts/FakeStrokeFontProvider';
+import { textObjectToPaths } from '../paths/textToPaths';
 
 type TestPatternLayerProps = {
   object: DesignObject;
@@ -15,6 +17,10 @@ type TestPatternLayerProps = {
  */
 export function TestPatternLayer({ object, selected, onPointerDown }: TestPatternLayerProps) {
   if (object.type !== 'test-pattern') {
+    if (object.type === 'text') {
+      return <TextPattern object={object} selected={selected} onPointerDown={onPointerDown} />;
+    }
+
     return null;
   }
 
@@ -27,6 +33,36 @@ export function TestPatternLayer({ object, selected, onPointerDown }: TestPatter
   }
 
   return null;
+}
+
+function TextPattern({
+  object,
+  selected,
+  onPointerDown,
+}: {
+  object: Extract<DesignObject, { type: 'text' }>;
+  selected: boolean;
+  onPointerDown: (event: PointerEvent<SVGGElement>) => void;
+}) {
+  const paths = textObjectToPaths(object, FakeStrokeFontProvider);
+
+  return (
+    <g
+      className={selected ? 'test-pattern test-pattern--selected' : 'test-pattern'}
+      aria-label="文本测试对象"
+      onPointerDown={onPointerDown}
+    >
+      {paths.map((path, pathIndex) => (
+        <polyline
+          key={`${object.id}-${pathIndex}`}
+          points={path.points.map((point) => `${point.x},${point.y}`).join(' ')}
+        />
+      ))}
+      <text x={object.xMm} y={object.yMm - 2}>
+        文本：{object.text}
+      </text>
+    </g>
+  );
 }
 
 function RectanglePattern({

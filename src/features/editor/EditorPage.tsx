@@ -22,6 +22,7 @@ export function EditorPage() {
   const project = useProjectStore((state) => state.project);
   const selectedObjectId = useProjectStore((state) => state.selectedObjectId);
   const addTestPattern = useProjectStore((state) => state.addTestPattern);
+  const addTextObject = useProjectStore((state) => state.addTextObject);
   const resetProject = useProjectStore((state) => state.resetProject);
   const selectedObject = project.objects.find((object) => object.id === selectedObjectId);
   const gcodeJob = projectToGcodeJob(project);
@@ -80,6 +81,9 @@ export function EditorPage() {
               </button>
               <button type="button" onClick={() => addTestPattern('cross')}>
                 添加十字
+              </button>
+              <button type="button" onClick={addTextObject}>
+                添加测试文本
               </button>
             </div>
           </section>

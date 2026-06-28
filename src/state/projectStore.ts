@@ -40,6 +40,7 @@ type ProjectStoreActions = {
   resetMachineAxisLine: () => void;
   saveBasePenDownZ: (z: number) => void;
   addTestPattern: (kind: TestPatternObject['kind']) => void;
+  addTextObject: () => void;
   selectObject: (objectId?: string) => void;
   updateObject: (objectId: string, patch: Partial<DesignObject>) => void;
   moveObject: (objectId: string, xMm: number, yMm: number) => void;
@@ -363,6 +364,32 @@ export const useProjectStore = create<ProjectStore>()(
             yMm: 30 + state.project.objects.length * 8,
             widthMm: kind === 'line-scan' ? 30 : 20,
             heightMm: kind === 'line-scan' ? 9 : 20,
+          };
+
+          return {
+            project: {
+              ...state.project,
+              objects: [...state.project.objects, object],
+            },
+            selectedObjectId: object.id,
+          };
+        });
+      },
+      addTextObject: () => {
+        set((state) => {
+          const object = {
+            id: createId('text'),
+            type: 'text' as const,
+            xMm: 30,
+            yMm: 70,
+            widthMm: 90,
+            rotationDeg: 0,
+            text: 'TEST',
+            fontSource: 'fake-stroke',
+            fontSizeMm: 10,
+            letterSpacingMm: 1,
+            lineHeightMm: 12,
+            writingMode: 'horizontal' as const,
           };
 
           return {

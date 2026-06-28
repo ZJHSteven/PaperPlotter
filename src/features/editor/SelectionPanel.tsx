@@ -25,12 +25,11 @@ export function SelectionPanel({ object }: SelectionPanelProps) {
   }
 
   if (object.type !== 'test-pattern') {
-    return (
-      <section className="panel-section">
-        <h2>选中对象</h2>
-        <p className="empty-state">当前对象类型暂未开放编辑。</p>
-      </section>
-    );
+    if (object.type === 'text') {
+      return <TextSelectionPanel object={object} />;
+    }
+
+    return null;
   }
 
   const paths = testPatternToPaths(object);
@@ -59,6 +58,30 @@ export function SelectionPanel({ object }: SelectionPanelProps) {
       </div>
 
       <p className="hint">路径预览：当前对象会导出为 {paths.length} 条折线路径。</p>
+    </section>
+  );
+}
+
+function TextSelectionPanel({ object }: { object: Extract<DesignObject, { type: 'text' }> }) {
+  const updateObject = useProjectStore((state) => state.updateObject);
+
+  return (
+    <section className="panel-section">
+      <h2>选中对象</h2>
+      <p className="object-title">文本对象</p>
+      <label className="field">
+        <span>文本内容</span>
+        <textarea value={object.text} rows={3} onChange={(event) => updateObject(object.id, { text: event.target.value })} />
+      </label>
+      <div className="field-grid">
+        <NumberField label="X mm" value={object.xMm} onChange={(value) => updateObject(object.id, { xMm: value })} />
+        <NumberField label="Y mm" value={object.yMm} onChange={(value) => updateObject(object.id, { yMm: value })} />
+      </div>
+      <div className="field-grid">
+        <NumberField label="字号 mm" value={object.fontSizeMm} onChange={(value) => updateObject(object.id, { fontSizeMm: value })} />
+        <NumberField label="字距 mm" value={object.letterSpacingMm} onChange={(value) => updateObject(object.id, { letterSpacingMm: value })} />
+      </div>
+      <p className="hint">当前使用 Fake Stroke Font，只用于验证单线路径闭环。</p>
     </section>
   );
 }

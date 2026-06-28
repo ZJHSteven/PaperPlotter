@@ -72,6 +72,19 @@ describe('App', () => {
     expect(screen.getByText('可导出路径：3')).toBeInTheDocument();
   });
 
+  it('可以添加测试文本并把文本路径计入导出路径', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '添加测试文本' }));
+
+    expect(screen.getByText('文本对象')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('TEST')).toBeInTheDocument();
+    expect(screen.getByText('文本：TEST')).toBeInTheDocument();
+    expect(screen.getByText('可导出路径：9')).toBeInTheDocument();
+  });
+
   it('点击导出按钮后显示已生成 G-code 状态', async () => {
     const user = userEvent.setup();
 

@@ -168,6 +168,18 @@ select {
   line-height: 1.65;
 }
 
+.check-list--error {
+  color: #991b1b;
+}
+
+.validation-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #991b1b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .hint {
   margin: 4px 0 0;
   border-left: 3px solid #f59e0b;

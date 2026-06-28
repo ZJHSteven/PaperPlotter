@@ -69,5 +69,16 @@ describe('App', () => {
     expect(screen.getByText('对象数量：2')).toBeInTheDocument();
     expect(screen.getByText('十字测试图案')).toBeInTheDocument();
     expect(screen.getByText('路径预览：当前对象会导出为 2 条折线路径。')).toBeInTheDocument();
+    expect(screen.getByText('可导出路径：3')).toBeInTheDocument();
+  });
+
+  it('点击导出按钮后显示已生成 G-code 状态', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '导出 G-code' }));
+
+    expect(screen.getByText('已生成 G-code：1 条路径。')).toBeInTheDocument();
   });
 });

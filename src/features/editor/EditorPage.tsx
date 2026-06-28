@@ -1,4 +1,8 @@
+import { useState } from 'react';
 import { useProjectStore } from '../../state/projectStore';
+import { generateGcode } from '../gcode/generateGcode';
+import { projectToGcodeJob } from '../gcode/projectToGcode';
+import { validateGcodeJob } from '../gcode/safetyCheck';
 import { PaperSettingsPanel } from '../settings/PaperSettingsPanel';
 import { MachineSettingsPanel } from '../settings/MachineSettingsPanel';
 import { SvgCanvas } from './SvgCanvas';
@@ -11,11 +15,25 @@ import { SelectionPanel } from './SelectionPanel';
  * 左侧是纸张/标定入口，中间是 SVG 纸面，右侧是机器参数和导出检查入口。
  */
 export function EditorPage() {
+  const [exportMessage, setExportMessage] = useState<string>('尚未导出。');
   const project = useProjectStore((state) => state.project);
   const selectedObjectId = useProjectStore((state) => state.selectedObjectId);
   const addTestPattern = useProjectStore((state) => state.addTestPattern);
   const resetProject = useProjectStore((state) => state.resetProject);
   const selectedObject = project.objects.find((object) => object.id === selectedObjectId);
+  const gcodeJob = projectToGcodeJob(project);
+  const validation = validateGcodeJob(gcodeJob);
+
+  function handleExportGcode() {
+    if (!validation.ok) {
+      setExportMessage(validation.issues.map((issue) => issue.message).join('；'));
+      return;
+    }
+
+    const gcode = generateGcode(gcodeJob);
+    downloadTextFile('paper-plotter-job.gcode', gcode);
+    setExportMessage(`已生成 G-code：${gcodeJob.paths.length} 条路径。`);
+  }
 
   return (
     <main className="app-shell">
@@ -29,7 +47,7 @@ export function EditorPage() {
           <button className="secondary-button" type="button" onClick={resetProject}>
             重置项目
           </button>
-          <button className="primary-button" type="button">
+          <button className="primary-button" type="button" onClick={handleExportGcode}>
             导出 G-code
           </button>
         </div>
@@ -72,14 +90,43 @@ export function EditorPage() {
 
           <section className="panel-section">
             <h2>导出前检查</h2>
-            <ul className="check-list">
+            <ul className={validation.ok ? 'check-list' : 'check-list check-list--error'}>
               <li>纸张尺寸：{project.paper.widthMm} × {project.paper.heightMm} mm</li>
               <li>对象数量：{project.objects.length}</li>
+              <li>可导出路径：{gcodeJob.paths.length}</li>
               <li>归零提示：运行前执行 G92 X0 Y0</li>
             </ul>
+            {validation.issues.length > 0 ? (
+              <ul className="validation-list">
+                {validation.issues.map((issue) => (
+                  <li key={`${issue.code}-${issue.message}`}>{issue.message}</li>
+                ))}
+              </ul>
+            ) : null}
+            <p className="hint">{exportMessage}</p>
           </section>
         </aside>
       </section>
     </main>
   );
+}
+
+/**
+ * 触发浏览器下载文本文件。
+ *
+ * Vitest/jsdom 没有真正的文件下载能力。
+ * 因此测试模式只验证 G-code 已经成功生成，不点击 `<a>` 触发伪导航，避免测试输出噪音。
+ */
+function downloadTextFile(fileName: string, content: string) {
+  if (import.meta.env.MODE === 'test') {
+    return;
+  }
+
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
 }

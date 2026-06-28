@@ -85,6 +85,36 @@ export function applyHomographyToPoint(
   };
 }
 
+/**
+ * 求 3x3 单应性矩阵的逆矩阵。
+ *
+ * 照片校正背景需要从“纸面输出像素”反查“原始照片像素”，
+ * 所以需要把 image->paper 矩阵反过来变成 paper->image 矩阵。
+ */
+export function invertHomography(matrix: HomographyMatrix): HomographyMatrix {
+  const [a, b, c, d, e, f, g, h, i] = matrix;
+  const determinant =
+    a * (e * i - f * h) -
+    b * (d * i - f * g) +
+    c * (d * h - e * g);
+
+  if (Math.abs(determinant) < 1e-12) {
+    throw new Error('透视矩阵不可逆，无法生成校正后的照片背景。');
+  }
+
+  return [
+    (e * i - f * h) / determinant,
+    (c * h - b * i) / determinant,
+    (b * f - c * e) / determinant,
+    (f * g - d * i) / determinant,
+    (a * i - c * g) / determinant,
+    (c * d - a * f) / determinant,
+    (d * h - e * g) / determinant,
+    (b * g - a * h) / determinant,
+    (a * e - b * d) / determinant,
+  ];
+}
+
 function validatePaperSize(widthMm: number, heightMm: number) {
   if (!Number.isFinite(widthMm) || !Number.isFinite(heightMm) || widthMm <= 0 || heightMm <= 0) {
     throw new Error('纸张尺寸必须是大于 0 的有效毫米数。');

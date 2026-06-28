@@ -24,7 +24,7 @@ type ProjectStoreActions = {
   setPaperOrientation: (orientation: PaperConfig['orientation']) => void;
   setCustomPaperSize: (widthMm: number, heightMm: number) => void;
   updateMachineConfig: (patch: Partial<MachineConfig>) => void;
-  setCalibrationImageUrl: (imageUrl: string) => void;
+  setCalibrationImageUrl: (imageUrl: string, imageSizePx: { width: number; height: number }) => void;
   addPaperCornerPoint: (point: ImagePoint) => void;
   resetPaperCorners: () => void;
   addTestPattern: (kind: TestPatternObject['kind']) => void;
@@ -116,15 +116,17 @@ export const useProjectStore = create<ProjectStore>()(
           },
         }));
       },
-      setCalibrationImageUrl: (imageUrl) => {
+      setCalibrationImageUrl: (imageUrl, imageSizePx) => {
         set((state) => ({
           project: {
             ...state.project,
             calibration: {
               ...state.project.calibration,
               imageUrl,
+              imageSizePx,
               paperCornersPx: undefined,
               result: undefined,
+              errorMessage: undefined,
             },
           },
         }));
@@ -138,36 +140,51 @@ export const useProjectStore = create<ProjectStore>()(
               nextCorners.bottomRight &&
               nextCorners.bottomLeft,
           );
-          const result = hasAllCorners
-            ? {
-                imageToPaperMatrix: computeImageToPaperTransform(
-                  nextCorners as PaperCornersPx,
-                  state.project.paper.widthMm,
-                  state.project.paper.heightMm,
-                ),
-                machineAxisAngleRad: 0,
-                paperToMachineMatrix: {
-                  a: 1,
-                  b: 0,
-                  c: 0,
-                  d: 1,
-                  e: 0,
-                  f: 0,
-                },
-                calibratedAt: Date.now(),
-              }
-            : undefined;
+          try {
+            const result = hasAllCorners
+              ? {
+                  imageToPaperMatrix: computeImageToPaperTransform(
+                    nextCorners as PaperCornersPx,
+                    state.project.paper.widthMm,
+                    state.project.paper.heightMm,
+                  ),
+                  machineAxisAngleRad: 0,
+                  paperToMachineMatrix: {
+                    a: 1,
+                    b: 0,
+                    c: 0,
+                    d: 1,
+                    e: 0,
+                    f: 0,
+                  },
+                  calibratedAt: Date.now(),
+                }
+              : undefined;
 
-          return {
-            project: {
-              ...state.project,
-              calibration: {
-                ...state.project.calibration,
-                paperCornersPx: nextCorners as PaperCornersPx,
-                result,
+            return {
+              project: {
+                ...state.project,
+                calibration: {
+                  ...state.project.calibration,
+                  paperCornersPx: nextCorners as PaperCornersPx,
+                  result,
+                  errorMessage: undefined,
+                },
               },
-            },
-          };
+            };
+          } catch (error) {
+            return {
+              project: {
+                ...state.project,
+                calibration: {
+                  ...state.project.calibration,
+                  paperCornersPx: nextCorners as PaperCornersPx,
+                  result: undefined,
+                  errorMessage: error instanceof Error ? error.message : '纸角标定失败。',
+                },
+              },
+            };
+          }
         });
       },
       resetPaperCorners: () => {
@@ -178,6 +195,7 @@ export const useProjectStore = create<ProjectStore>()(
               ...state.project.calibration,
               paperCornersPx: undefined,
               result: undefined,
+              errorMessage: undefined,
             },
           },
         }));

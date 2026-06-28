@@ -46,10 +46,15 @@ export type CalibrationResult = {
 
 export type CalibrationConfig = {
   imageUrl?: string;
+  imageSizePx?: {
+    width: number;
+    height: number;
+  };
   paperCornersPx?: PaperCornersPx;
   machineAxisLinePx?: MachineAxisLinePx;
   originOnPaper: 'top-left';
   result?: CalibrationResult;
+  errorMessage?: string;
 };
 
 export type ZCalibrationPoint = {

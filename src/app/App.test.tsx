@@ -88,4 +88,35 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: '导入纸张照片' })).toBeInTheDocument();
     expect(screen.getByText('先导入一张纸张照片，再按左上、右上、右下、左下点选四角。')).toBeInTheDocument();
   });
+
+  it('导入照片后画布进入照片像素标定模式', () => {
+    useProjectStore.getState().setCalibrationImageUrl('data:image/svg+xml;base64,stub', {
+      width: 400,
+      height: 300,
+    });
+
+    render(<App />);
+
+    expect(screen.getByText('400 px × 300 px，点击坐标 = 照片 px')).toBeInTheDocument();
+    expect(screen.getByText('请在照片标定视图中点击：左上角（0/4）')).toBeInTheDocument();
+    expect(screen.getByText('照片尺寸：400 × 300 px')).toBeInTheDocument();
+  });
+
+  it('四角点选完成后回到纸面毫米预览并显示标定完成提示', () => {
+    const store = useProjectStore.getState();
+    store.setCalibrationImageUrl('data:image/svg+xml;base64,stub', {
+      width: 400,
+      height: 300,
+    });
+    useProjectStore.getState().addPaperCornerPoint({ x: 20, y: 10 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 380, y: 20 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 370, y: 290 });
+    useProjectStore.getState().addPaperCornerPoint({ x: 30, y: 280 });
+
+    render(<App />);
+
+    expect(screen.getByText('210 mm × 297 mm，SVG 坐标单位 = mm')).toBeInTheDocument();
+    expect(screen.getByText('四个纸角已点完，已计算 imageToPaper 透视矩阵。')).toBeInTheDocument();
+    expect(useProjectStore.getState().project.calibration.result?.imageToPaperMatrix).toHaveLength(9);
+  });
 });

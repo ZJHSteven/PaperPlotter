@@ -36,7 +36,7 @@ describe('useProjectStore', () => {
   it('依次添加四个纸角后生成 imageToPaper 标定结果', () => {
     const store = useProjectStore.getState();
 
-    store.setCalibrationImageUrl('data:image/png;base64,stub');
+    store.setCalibrationImageUrl('data:image/png;base64,stub', { width: 210, height: 297 });
     useProjectStore.getState().addPaperCornerPoint({ x: 0, y: 0 });
     useProjectStore.getState().addPaperCornerPoint({ x: 210, y: 0 });
     useProjectStore.getState().addPaperCornerPoint({ x: 210, y: 297 });

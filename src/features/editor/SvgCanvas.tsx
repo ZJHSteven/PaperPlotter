@@ -37,14 +37,27 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
   } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [panMm, setPanMm] = useState({ x: 0, y: 0 });
+  const calibrationMode = Boolean(
+    calibration.imageUrl && calibration.imageSizePx && !calibration.result,
+  );
   const baseView = useMemo(
     () => ({
-      x: -paddingMm,
-      y: -paddingMm,
-      width: paper.widthMm + paddingMm * 2,
-      height: paper.heightMm + paddingMm * 2,
+      x: calibrationMode ? 0 : -paddingMm,
+      y: calibrationMode ? 0 : -paddingMm,
+      width: calibrationMode
+        ? calibration.imageSizePx?.width ?? paper.widthMm
+        : paper.widthMm + paddingMm * 2,
+      height: calibrationMode
+        ? calibration.imageSizePx?.height ?? paper.heightMm
+        : paper.heightMm + paddingMm * 2,
     }),
-    [paper.heightMm, paper.widthMm],
+    [
+      calibration.imageSizePx?.height,
+      calibration.imageSizePx?.width,
+      calibrationMode,
+      paper.heightMm,
+      paper.widthMm,
+    ],
   );
   const visibleView = useMemo(() => {
     const width = baseView.width / zoom;
@@ -128,7 +141,7 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
   }
 
   function handleCanvasClick(event: PointerEvent<SVGSVGElement>) {
-    if (!calibration.imageUrl || calibration.result) {
+    if (!calibrationMode) {
       return;
     }
 
@@ -165,7 +178,11 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
       <div className="canvas-panel__header">
         <div>
           <h2>纸面预览</h2>
-          <p>{paper.widthMm} mm × {paper.heightMm} mm，SVG 坐标单位 = mm</p>
+          <p>
+            {calibrationMode
+              ? `${calibration.imageSizePx?.width} px × ${calibration.imageSizePx?.height} px，点击坐标 = 照片 px`
+              : `${paper.widthMm} mm × ${paper.heightMm} mm，SVG 坐标单位 = mm`}
+          </p>
         </div>
         <div className="canvas-tools" aria-label="画布视图工具">
           <button type="button" onClick={() => changeZoom(zoom / 1.25)} aria-label="缩小画布">
@@ -194,20 +211,23 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
           onPointerCancel={handlePointerUp}
           onClick={handleCanvasClick}
         >
-          <PaperLayer paper={paper} />
+          {calibrationMode ? null : <PaperLayer paper={paper} />}
           <CalibrationLayer
             calibration={calibration}
             paperWidthMm={paper.widthMm}
             paperHeightMm={paper.heightMm}
+            calibrationMode={calibrationMode}
           />
-          {objects.map((object) => (
-            <TestPatternLayer
-              key={object.id}
-              object={object}
-              selected={object.id === selectedObjectId}
-              onPointerDown={(event) => handleObjectPointerDown(event, object)}
-            />
-          ))}
+          {calibrationMode
+            ? null
+            : objects.map((object) => (
+                <TestPatternLayer
+                  key={object.id}
+                  object={object}
+                  selected={object.id === selectedObjectId}
+                  onPointerDown={(event) => handleObjectPointerDown(event, object)}
+                />
+              ))}
         </svg>
       </div>
     </section>

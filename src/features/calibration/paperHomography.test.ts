@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { applyHomographyToPoint, computeImageToPaperTransform } from './paperHomography';
+import {
+  applyHomographyToPoint,
+  computeImageToPaperTransform,
+  invertHomography,
+} from './paperHomography';
 import type { PaperCornersPx } from '../../types/project';
 
 function expectPointClose(actual: { x: number; y: number }, expected: { x: number; y: number }) {
@@ -48,5 +52,19 @@ describe('computeImageToPaperTransform', () => {
 
     expect(() => computeImageToPaperTransform(corners, 0, 297)).toThrow('纸张尺寸');
     expect(() => computeImageToPaperTransform(corners, 210, 297)).toThrow('面积过小');
+  });
+
+  it('可以求逆矩阵，把纸面坐标映射回照片坐标', () => {
+    const corners: PaperCornersPx = {
+      topLeft: { x: 80, y: 40 },
+      topRight: { x: 330, y: 70 },
+      bottomRight: { x: 300, y: 360 },
+      bottomLeft: { x: 60, y: 320 },
+    };
+    const imageToPaper = computeImageToPaperTransform(corners, 210, 297);
+    const paperToImage = invertHomography(imageToPaper);
+
+    expectPointClose(applyHomographyToPoint({ x: 0, y: 0 }, paperToImage), corners.topLeft);
+    expectPointClose(applyHomographyToPoint({ x: 210, y: 297 }, paperToImage), corners.bottomRight);
   });
 });

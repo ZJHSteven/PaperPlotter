@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useProjectStore } from '../../state/projectStore';
 import { generateGcode } from '../gcode/generateGcode';
 import { projectToGcodeJob } from '../gcode/projectToGcode';
@@ -10,6 +10,7 @@ import { SvgCanvas } from './SvgCanvas';
 import { SelectionPanel } from './SelectionPanel';
 import { ZeroingGuide } from './ZeroingGuide';
 import { ZCalibrationPanel } from '../z-calibration/ZCalibrationPanel';
+import { loadCalibrationImageBlob } from '../storage/imageStorage';
 
 export type EditorTool = 'select' | 'pan' | 'paper-corners' | 'machine-axis';
 type RightPanelTab = 'object' | 'machine' | 'z' | 'export';
@@ -31,10 +32,53 @@ export function EditorPage() {
   const addTextObject = useProjectStore((state) => state.addTextObject);
   const addChineseSampleTextObject = useProjectStore((state) => state.addChineseSampleTextObject);
   const resetProject = useProjectStore((state) => state.resetProject);
+  const restoreCalibrationImageUrl = useProjectStore((state) => state.restoreCalibrationImageUrl);
+  const setCalibrationError = useProjectStore((state) => state.setCalibrationError);
   const selectedObject = project.objects.find((object) => object.id === selectedObjectId);
   const gcodeJob = projectToGcodeJob(project);
   const validation = validateGcodeJob(gcodeJob);
   const machineAxisDone = Boolean(project.calibration.machineAxisLinePx);
+
+  useEffect(() => {
+    let objectUrl: string | undefined;
+    let cancelled = false;
+
+    if (!project.calibration.imageId || project.calibration.imageUrl) {
+      return undefined;
+    }
+
+    loadCalibrationImageBlob(project.calibration.imageId)
+      .then((record) => {
+        if (cancelled) {
+          return;
+        }
+
+        if (!record) {
+          setCalibrationError('浏览器本地图片记录不存在，请重新导入纸张照片。');
+          return;
+        }
+
+        objectUrl = URL.createObjectURL(record.blob);
+        restoreCalibrationImageUrl(objectUrl);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setCalibrationError(error instanceof Error ? error.message : '读取纸张照片失败。');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [
+    project.calibration.imageId,
+    project.calibration.imageUrl,
+    restoreCalibrationImageUrl,
+    setCalibrationError,
+  ]);
 
   function handleExportGcode() {
     if (!validation.ok) {

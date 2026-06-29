@@ -53,6 +53,17 @@ describe('useProjectStore', () => {
     expect(calibration.result?.imageToPaperMatrix).toHaveLength(9);
   });
 
+  it('持久化项目时不把图片 data URL 写入 localStorage', () => {
+    const largeDataUrl = `data:image/png;base64,${'a'.repeat(1024)}`;
+
+    useProjectStore.getState().setCalibrationImageUrl(largeDataUrl, { width: 210, height: 297 });
+
+    const persistedProject = localStorage.getItem('paper-plotter-project-v1');
+
+    expect(persistedProject).not.toContain(largeDataUrl);
+    expect(useProjectStore.getState().project.calibration.imageUrl).toBe(largeDataUrl);
+  });
+
   it('四角标定后可以点选机器参考线并写入机器方向映射', () => {
     const store = useProjectStore.getState();
 

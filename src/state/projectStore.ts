@@ -33,6 +33,17 @@ type ProjectStoreActions = {
   setCustomPaperSize: (widthMm: number, heightMm: number) => void;
   updateMachineConfig: (patch: Partial<MachineConfig>) => void;
   setCalibrationImageUrl: (imageUrl: string, imageSizePx: { width: number; height: number }) => void;
+  setCalibrationImageFromStorage: (
+    image: {
+      imageId: string;
+      imageUrl: string;
+      imageFileName: string;
+      imageMimeType: string;
+    },
+    imageSizePx: { width: number; height: number },
+  ) => void;
+  restoreCalibrationImageUrl: (imageUrl: string) => void;
+  setCalibrationError: (message: string) => void;
   addPaperCornerPoint: (point: ImagePoint) => void;
   resetPaperCorners: () => void;
   setMachineAxisReferenceAxis: (axis: 'x' | 'y') => void;
@@ -143,13 +154,59 @@ export const useProjectStore = create<ProjectStore>()(
             ...state.project,
             calibration: {
               ...state.project.calibration,
+              imageId: undefined,
               imageUrl,
+              imageFileName: undefined,
+              imageMimeType: undefined,
               imageSizePx,
               paperCornersPx: undefined,
               machineAxisLineDraftPx: undefined,
               machineAxisLinePx: undefined,
               result: undefined,
               errorMessage: undefined,
+            },
+          },
+        }));
+      },
+      setCalibrationImageFromStorage: (image, imageSizePx) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            calibration: {
+              ...state.project.calibration,
+              imageId: image.imageId,
+              imageUrl: image.imageUrl,
+              imageFileName: image.imageFileName,
+              imageMimeType: image.imageMimeType,
+              imageSizePx,
+              paperCornersPx: undefined,
+              machineAxisLineDraftPx: undefined,
+              machineAxisLinePx: undefined,
+              result: undefined,
+              errorMessage: undefined,
+            },
+          },
+        }));
+      },
+      restoreCalibrationImageUrl: (imageUrl) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            calibration: {
+              ...state.project.calibration,
+              imageUrl,
+              errorMessage: undefined,
+            },
+          },
+        }));
+      },
+      setCalibrationError: (message) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            calibration: {
+              ...state.project.calibration,
+              errorMessage: message,
             },
           },
         }));
@@ -496,7 +553,15 @@ export const useProjectStore = create<ProjectStore>()(
     {
       name: 'paper-plotter-project-v1',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ project: state.project }),
+      partialize: (state) => ({
+        project: {
+          ...state.project,
+          calibration: {
+            ...state.project.calibration,
+            imageUrl: undefined,
+          },
+        },
+      }),
     },
   ),
 );

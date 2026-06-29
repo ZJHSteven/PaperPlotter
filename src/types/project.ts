@@ -45,7 +45,10 @@ export type CalibrationResult = {
 };
 
 export type CalibrationConfig = {
+  imageId?: string;
   imageUrl?: string;
+  imageFileName?: string;
+  imageMimeType?: string;
   imageSizePx?: {
     width: number;
     height: number;

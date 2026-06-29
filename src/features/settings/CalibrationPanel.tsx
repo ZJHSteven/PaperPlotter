@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useProjectStore } from '../../state/projectStore';
+import { saveCalibrationImageBlob } from '../storage/imageStorage';
 import {
   getNextPaperCornerKey,
   getPaperCornerCount,
@@ -20,6 +21,8 @@ type CalibrationPanelProps = {
 export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const setCalibrationImageUrl = useProjectStore((state) => state.setCalibrationImageUrl);
+  const setCalibrationImageFromStorage = useProjectStore((state) => state.setCalibrationImageFromStorage);
+  const setCalibrationError = useProjectStore((state) => state.setCalibrationError);
   const resetPaperCorners = useProjectStore((state) => state.resetPaperCorners);
   const setMachineAxisReferenceAxis = useProjectStore((state) => state.setMachineAxisReferenceAxis);
   const resetMachineAxisLine = useProjectStore((state) => state.resetMachineAxisLine);
@@ -34,20 +37,38 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        const image = new Image();
-        image.onload = () => {
-          setCalibrationImageUrl(reader.result as string, {
+    const previewUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = async () => {
+      try {
+        const storedImage = await saveCalibrationImageBlob(file);
+        setCalibrationImageFromStorage(
+          {
+            imageId: storedImage.id,
+            imageUrl: previewUrl,
+            imageFileName: storedImage.fileName,
+            imageMimeType: storedImage.mimeType,
+          },
+          {
             width: image.naturalWidth,
             height: image.naturalHeight,
-          });
-        };
-        image.src = reader.result;
+          },
+        );
+      } catch (error) {
+        URL.revokeObjectURL(previewUrl);
+        setCalibrationError(error instanceof Error ? error.message : '保存纸张照片失败。');
       }
     };
-    reader.readAsDataURL(file);
+    image.onerror = () => {
+      URL.revokeObjectURL(previewUrl);
+      setCalibrationError(
+        file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+          ? '当前浏览器不能直接解码 HEIC/HEIF 照片，请先转换为 JPG、PNG 或 WebP 后再导入。'
+          : '当前浏览器无法解码这张图片，请换用 JPG、PNG 或 WebP 格式。',
+      );
+    };
+    image.src = previewUrl;
   }
 
   return (
@@ -81,6 +102,7 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
           照片尺寸：{calibration.imageSizePx.width} × {calibration.imageSizePx.height} px
         </p>
       ) : null}
+      {calibration.imageFileName ? <p className="meta-text">照片文件：{calibration.imageFileName}</p> : null}
       {calibration.errorMessage ? <p className="error-text">{calibration.errorMessage}</p> : null}
 
       {calibration.paperCornersPx ? (

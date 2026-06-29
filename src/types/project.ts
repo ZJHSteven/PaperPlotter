@@ -22,6 +22,12 @@ export type PaperConfig = {
   widthMm: number;
   heightMm: number;
   orientation: PaperOrientation;
+  marginsMm: {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  };
 };
 
 export type PaperCornersPx = {

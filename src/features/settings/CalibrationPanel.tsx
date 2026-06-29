@@ -30,7 +30,7 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
   const cornerCount = getPaperCornerCount(calibration.paperCornersPx);
   const imageImported = Boolean(calibration.imageUrl || calibration.imageId);
   const cornersDone = cornerCount === 4 && Boolean(calibration.result);
-  const showDevTestImageButton = import.meta.env.MODE !== 'production';
+  const showDevTestImageButton = import.meta.env.MODE === 'test';
   const machineAxisDraft = calibration.machineAxisLineDraftPx ?? { axis: 'x' as const };
   const machineAxisPointCount = Number(Boolean(machineAxisDraft.p1)) + Number(Boolean(machineAxisDraft.p2));
 
@@ -85,18 +85,23 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
       />
       <ol className="calibration-steps" aria-label="照片标定步骤">
         <CalibrationStep
+          actionLabel={imageImported ? '完成' : '导入'}
           done={imageImported}
           index={1}
           meta={calibration.imageFileName ?? '支持 JPG、PNG、WebP；HEIC 需浏览器可解码'}
+          onAction={imageImported ? undefined : () => inputRef.current?.click()}
           title="拍照并导入"
         />
         <CalibrationStep
+          actionLabel={cornersDone ? '完成' : '待做'}
           done={cornersDone}
           index={2}
           meta={cornersDone ? '已设置 4 / 4' : `已设置 ${cornerCount} / 4`}
+          onAction={calibration.paperCornersPx ? resetPaperCorners : undefined}
           title="设置四个角点"
         />
         <CalibrationStep
+          actionLabel={cornersDone ? '完成' : '待做'}
           done={cornersDone}
           index={3}
           meta={cornersDone ? '透视校正已应用' : '四角完成后自动计算'}
@@ -104,62 +109,44 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
         />
       </ol>
 
-      <div className="inline-actions">
-        <button className="secondary-button full-width" type="button" onClick={() => inputRef.current?.click()}>
-          导入纸张照片
-        </button>
-        {calibration.paperCornersPx ? (
-          <button className="secondary-button full-width" type="button" onClick={resetPaperCorners}>
-            重新标定
-          </button>
-        ) : null}
-      </div>
       {showDevTestImageButton ? (
-        <button className="secondary-button full-width dev-only-button" type="button" onClick={loadDevTestImage}>
+        <button className="secondary-button full-width dev-only-button compact-button" type="button" onClick={loadDevTestImage}>
           载入测试照片
         </button>
       ) : null}
 
-      <p className="hint">
-        {calibration.imageUrl
-          ? nextCornerKey
-            ? `请在照片标定视图中点击：${PAPER_CORNER_LABELS[nextCornerKey]}（${cornerCount}/4）`
-            : '四个纸角已点完，已计算 imageToPaper 透视矩阵。'
-          : '先导入一张纸张照片，再按左上、右上、右下、左下点选四角。'}
-      </p>
-      {calibration.imageSizePx ? (
-        <p className="meta-text">
-          照片尺寸：{calibration.imageSizePx.width} × {calibration.imageSizePx.height} px
-        </p>
+      {nextCornerKey && imageImported ? (
+        <p className="hint">下一步：切换“纸角”工具，点击 {PAPER_CORNER_LABELS[nextCornerKey]}（{cornerCount}/4）。</p>
       ) : null}
-      {calibration.imageFileName ? <p className="meta-text">照片文件：{calibration.imageFileName}</p> : null}
+      {calibration.imageSizePx ? <p className="meta-text">照片尺寸：{calibration.imageSizePx.width} × {calibration.imageSizePx.height} px</p> : null}
       {calibration.errorMessage ? <p className="error-text">{calibration.errorMessage}</p> : null}
 
-      {calibration.result ? (
-        <div className="sub-panel">
-          <h3>机器参考线</h3>
-          <label className="field">
-            <span>参考线代表</span>
-            <select
-              value={machineAxisDraft.axis}
-              onChange={(event) => setMachineAxisReferenceAxis(event.target.value as 'x' | 'y')}
-            >
-              <option value="x">机器 X 轴</option>
-              <option value="y">机器 Y 轴</option>
-            </select>
-          </label>
-          <p className="hint">
-            {calibration.machineAxisLinePx
-              ? '机器参考线已标定，已写入纸面到机器方向映射。'
-              : `请在纸面预览中点击机器参考线两端（${machineAxisPointCount}/2）。`}
-          </p>
-          {calibration.machineAxisLineDraftPx || calibration.machineAxisLinePx ? (
-            <button className="secondary-button full-width" type="button" onClick={resetMachineAxisLine}>
-              重置机器参考线
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="sub-panel machine-reference-panel">
+        <h3>机器参考线（笔架行程）</h3>
+        <label className="field">
+          <span>类型</span>
+          <select
+            disabled={!calibration.result}
+            value={machineAxisDraft.axis}
+            onChange={(event) => setMachineAxisReferenceAxis(event.target.value as 'x' | 'y')}
+          >
+            <option value="x">水平线（机器 X 轴）</option>
+            <option value="y">垂直线（机器 Y 轴）</option>
+          </select>
+        </label>
+        <p className="hint">
+          {calibration.machineAxisLinePx
+            ? '机器参考线已标定，已写入纸面到机器方向映射。'
+            : calibration.result
+              ? `请在纸面预览中点击机器参考线两端（${machineAxisPointCount}/2）。`
+              : '请先完成纸张四角标定。'}
+        </p>
+        {calibration.machineAxisLineDraftPx || calibration.machineAxisLinePx ? (
+          <button className="secondary-button full-width compact-button" type="button" onClick={resetMachineAxisLine}>
+            重置机器参考线
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 
@@ -178,14 +165,18 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
 }
 
 function CalibrationStep({
+  actionLabel,
   done,
   index,
   meta,
+  onAction,
   title,
 }: {
+  actionLabel: string;
   done: boolean;
   index: number;
   meta: string;
+  onAction?: () => void;
   title: string;
 }) {
   return (
@@ -195,7 +186,9 @@ function CalibrationStep({
         <strong>{title}</strong>
         <small>{meta}</small>
       </span>
-      <em>{done ? '完成' : '待做'}</em>
+      <button disabled={!onAction && !done} type="button" onClick={onAction}>
+        {actionLabel}
+      </button>
     </li>
   );
 }

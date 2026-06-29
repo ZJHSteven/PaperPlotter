@@ -175,7 +175,7 @@ textarea {
   top: 0;
   z-index: 2;
   border-bottom: 1px solid #e6edf5;
-  margin: -8px -8px 8px;
+  margin: 0 -8px 8px;
   padding: 0 8px;
   background: #fff;
 }
@@ -217,6 +217,10 @@ textarea {
 .primary-button,
 .secondary-button,
 .button-grid button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: 1px solid #d1dbe8;
   border-radius: 6px;
   padding: 7px 10px;
@@ -351,6 +355,25 @@ textarea {
   font-size: 12px;
 }
 
+.field--inline-unit {
+  position: relative;
+}
+
+.field--inline-unit input {
+  padding-right: 34px;
+}
+
+.field--inline-unit em {
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  color: #8997aa;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  pointer-events: none;
+}
+
 .field textarea {
   min-height: 92px;
   resize: vertical;
@@ -363,6 +386,23 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 7px;
+}
+
+.margin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.margin-grid > span {
+  grid-column: 1 / -1;
+  color: #53657f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.margin-grid .field {
+  margin-bottom: 0;
 }
 
 .segmented-control {
@@ -415,7 +455,7 @@ textarea {
 
 .calibration-step {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-columns: 24px minmax(0, 1fr) 48px;
   align-items: center;
   gap: 8px;
   min-height: 46px;
@@ -466,17 +506,25 @@ textarea {
   line-height: 1.25;
 }
 
-.calibration-step em {
+.calibration-step button {
+  border: 0;
+  border-radius: 4px;
+  padding: 4px 0;
+  background: transparent;
   color: #16a34a;
   font-size: 11px;
-  font-style: normal;
   font-weight: 700;
+  cursor: pointer;
 }
 
-.inline-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+.calibration-step button:not(:disabled) {
+  border: 1px solid #d8e8ff;
+  background: #f3f8ff;
+  color: #1f6feb;
+}
+
+.calibration-step button:disabled {
+  cursor: default;
 }
 
 .check-list--error {
@@ -518,16 +566,44 @@ textarea {
 }
 
 .zeroing-guide h2 {
-  color: #92400e;
+  color: #172033;
 }
 
 .zeroing-guide code {
-  border-radius: 5px;
-  padding: 2px 5px;
-  background: #fff7d6;
-  color: #7c2d12;
+  color: inherit;
   font-family: "Cascadia Code", "Consolas", monospace;
   font-size: 12px;
+}
+
+.mini-help {
+  margin: 0 0 8px;
+  color: #66768f;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.command-button {
+  width: 100%;
+  border: 1px solid #1f6feb;
+  border-radius: 5px;
+  padding: 7px 10px;
+  background: #fff;
+  color: #1f6feb;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.origin-status {
+  margin: 7px 0 0;
+  border: 1px solid #b9dec6;
+  border-radius: 5px;
+  padding: 7px 10px;
+  background: #effaf2;
+  color: #16703b;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .meta-text,

@@ -2,8 +2,8 @@
 
 ## 当前结论（必须最新）
 
-- 现状：软件侧 MVP 已完成，第 1 至第 10 步均已实现并通过本机验证；一屏工具台 UI、IndexedDB 图片存储和 Web Serial Z 标定入口已完成，等待用户在当前浏览器和真实写字机上实操验收。
-- 已完成：Vite + React + TypeScript 配置；Zustand 持久化项目状态；纸张/机器/Z 标定设置面板；SVG 毫米纸面预览；默认 20mm 方框测试对象；画布缩放、重置和拖拽平移；响应式布局；添加十字测试图案；对象选择/拖动；测试图案到折线路径转换；基础 G-code 生成、导出按钮和安全检查；照片原始 px 标定模式；四角 homography 计算；校正后 PNG 纸面背景；机器参考线 X/Y 选择与点选；paperPointToMachinePoint；paperPathsToMachinePaths 导出映射；G92 归零提示；Z 点粗找与线细调；FakeStrokeFontProvider；BasicChineseStrokeFontProvider；中文“实验报告”预览与导出；Vitest 单元/组件测试；README 项目说明、启动部署说明和实机验收流程；GitHub 仓库 Description 已通过 `gh repo edit` 写入；工具台顶栏/底栏/侧栏标签页；显式工具模式；准星标定光标；Ctrl+滚轮缩放；标定点屏幕尺度放大；照片 Blob 保存到 IndexedDB；HEIC/HEIF 解码失败提示；Web Serial Z 标定 G-code 发送入口。
+- 现状：软件侧 MVP 已完成，第 1 至第 10 步均已实现并通过本机验证；一屏工具台 UI、IndexedDB 图片存储和 Web Serial Z 标定入口已完成，等待用户在真实写字机上实操验收。
+- 已完成：Vite + React + TypeScript 配置；Zustand 持久化项目状态；纸张/机器/Z 标定设置面板；SVG 毫米纸面预览；默认 20mm 方框测试对象；画布缩放、重置和拖拽平移；响应式布局；添加十字测试图案；对象选择/拖动；测试图案到折线路径转换；基础 G-code 生成、导出按钮和安全检查；照片原始 px 标定模式；四角 homography 计算；校正后 PNG 纸面背景；机器参考线 X/Y 选择与点选；paperPointToMachinePoint；paperPathsToMachinePaths 导出映射；G92 归零提示；Z 点粗找与线细调；FakeStrokeFontProvider；BasicChineseStrokeFontProvider；中文“实验报告”预览与导出；Vitest 单元/组件测试；README 项目说明、启动部署说明和实机验收流程；GitHub 仓库 Description 已通过 `gh repo edit` 写入；工具台顶栏/底栏/侧栏标签页；显式工具模式；准星标定光标；Ctrl+滚轮缩放；标定点屏幕尺度放大；照片 Blob 保存到 IndexedDB；HEIC/HEIF 解码失败提示；Web Serial Z 标定 G-code 发送入口；`lucide-react` 标准图标工具栏；参考图风格左栏纸张/标定/参考线/归零紧凑布局；浏览器一屏布局验证。
 - 正在做：用户实操验收新工具台和 Web Serial Z 标定流程。
 - 下一步：用户先在浏览器中检查页面是否一屏可用；导入真实照片确认不再触发 localStorage 配额错误；切到 Z 标定页连接串口，先发送粗找点测 G-code，再进入细调并保存可用落笔 Z。
 
@@ -45,4 +45,4 @@
 - 坑12：GitHub Pages 如果部署在仓库子路径，可能需要配置 Vite 的 `base`；Cloudflare Pages、Vercel、Netlify 这类根路径静态部署通常只需要 `npm run build` 和 `dist/`。
 - 坑13：HEIC/HEIF 即使能被文件选择器选中，也不代表 Chromium 能解码；当前会显示明确错误，后续若要原生支持需要接入转换器。
 - 坑14：Web Serial 必须由用户手动选择串口，且同一串口不能同时被外部 sender 占用。
-- 坑15：本轮 Codex in-app browser 自动化读取 DOM 连续超时；命令侧 `typecheck`、`test`、`build` 和本地 HTTP 200 已通过，最终 UI 观感和串口授权弹窗需要用户当前浏览器实操确认。
+- 坑15：UI 一屏验证不能替代实机验证；当前浏览器已确认默认 1680×944 视口无页面滚动、左右栏同高、无框架报错，但串口授权弹窗和真实 Z 轴动作仍必须由用户在本机设备上确认。

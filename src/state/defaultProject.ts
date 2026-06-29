@@ -17,6 +17,13 @@ export const PAPER_PRESETS: Record<Exclude<PaperPreset, 'custom'>, Pick<PaperCon
   B5: { widthMm: 176, heightMm: 250 },
 };
 
+export const DEFAULT_PAPER_MARGINS = {
+  left: 10,
+  right: 10,
+  top: 10,
+  bottom: 10,
+};
+
 /**
  * 根据预设和方向生成真实纸张尺寸。
  *
@@ -31,8 +38,8 @@ export function createPresetPaperConfig(
   const size = PAPER_PRESETS[preset];
 
   return orientation === 'portrait'
-    ? { preset, orientation, widthMm: size.widthMm, heightMm: size.heightMm }
-    : { preset, orientation, widthMm: size.heightMm, heightMm: size.widthMm };
+    ? { preset, orientation, widthMm: size.widthMm, heightMm: size.heightMm, marginsMm: DEFAULT_PAPER_MARGINS }
+    : { preset, orientation, widthMm: size.heightMm, heightMm: size.widthMm, marginsMm: DEFAULT_PAPER_MARGINS };
 }
 
 /**

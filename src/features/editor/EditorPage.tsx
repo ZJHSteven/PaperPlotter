@@ -1,4 +1,21 @@
 import { useEffect, useState } from 'react';
+import {
+  Download,
+  Folder,
+  Layers,
+  MousePointer2,
+  Move,
+  PenLine,
+  Pencil,
+  Redo2,
+  Ruler,
+  Settings,
+  SquarePen,
+  Type,
+  Undo2,
+  ZoomIn,
+  type LucideIcon,
+} from 'lucide-react';
 import { useProjectStore } from '../../state/projectStore';
 import { generateGcode } from '../gcode/generateGcode';
 import { projectToGcodeJob } from '../gcode/projectToGcode';
@@ -35,7 +52,6 @@ export function EditorPage() {
   const selectedObjectId = useProjectStore((state) => state.selectedObjectId);
   const addTestPattern = useProjectStore((state) => state.addTestPattern);
   const addTextObject = useProjectStore((state) => state.addTextObject);
-  const addChineseSampleTextObject = useProjectStore((state) => state.addChineseSampleTextObject);
   const resetProject = useProjectStore((state) => state.resetProject);
   const undo = useProjectStore((state) => state.undo);
   const redo = useProjectStore((state) => state.redo);
@@ -145,38 +161,38 @@ export function EditorPage() {
       <header className="app-toolbar">
         <div className="brand-block" aria-label="项目标题">
           <span className="brand-mark" aria-hidden="true">
-            <Icon name="app" />
+            <SquarePen size={18} strokeWidth={2.2} />
           </span>
           <strong>PaperPlotter</strong>
           <button className="project-button" type="button">
-            <Icon name="folder" /> 项目
+            <Folder size={15} /> 项目
           </button>
           <span className="project-name">示例项目_A4_练字帖</span>
           <span className="save-indicator">● 已保存 {formatTime(savedAt)}</span>
         </div>
 
         <div className="toolbar-group toolbar-group--history" aria-label="撤销重做">
-          <IconButton disabled={!canUndo} label="撤销" name="undo" onClick={undo} />
-          <IconButton disabled={!canRedo} label="重做" name="redo" onClick={redo} />
+          <IconButton disabled={!canUndo} icon={Undo2} label="撤销" onClick={undo} />
+          <IconButton disabled={!canRedo} icon={Redo2} label="重做" onClick={redo} />
         </div>
 
         <div className="tool-strip" aria-label="编辑工具栏">
-          <ToolButton active={activeTool === 'select'} icon="cursor" label="选择" onClick={() => setActiveTool('select')} />
-          <ToolButton active={activeTool === 'pan'} icon="move" label="移动" onClick={() => setActiveTool('pan')} />
-          <ToolButton active={false} icon="zoom" label="缩放" onClick={() => setActiveTool('select')} />
-          <ToolButton active={false} icon="pen" label="绘制" onClick={() => addTestPattern('rectangle')} />
-          <ToolButton active={false} icon="text" label="文字" onClick={addTextObject} />
-          <ToolButton active={rightTab === 'object'} icon="layers" label="图层" onClick={() => setRightTab('object')} />
+          <ToolButton active={activeTool === 'select'} icon={MousePointer2} label="选择" onClick={() => setActiveTool('select')} />
+          <ToolButton active={activeTool === 'pan'} icon={Move} label="移动" onClick={() => setActiveTool('pan')} />
+          <ToolButton active={false} icon={ZoomIn} label="缩放" onClick={() => setActiveTool('select')} />
+          <ToolButton active={false} icon={PenLine} label="绘制" onClick={() => addTestPattern('rectangle')} />
+          <ToolButton active={false} icon={Type} label="文字" onClick={addTextObject} />
+          <ToolButton active={rightTab === 'object'} icon={Layers} label="图层" onClick={() => setRightTab('object')} />
           <ToolButton
             active={activeTool === 'paper-corners'}
-            icon="corner"
+            icon={Pencil}
             label="纸角"
             onClick={() => setActiveTool('paper-corners')}
           />
           <ToolButton
             active={activeTool === 'machine-axis'}
             disabled={!project.calibration.result}
-            icon="axis"
+            icon={Ruler}
             label="参考线"
             onClick={() => setActiveTool('machine-axis')}
           />
@@ -190,13 +206,13 @@ export function EditorPage() {
             </select>
           </label>
           <button className="settings-button" type="button" onClick={() => setRightTab('machine')}>
-            <Icon name="settings" /> 设置
+            <Settings size={16} /> 设置
           </button>
           <button className="secondary-button" type="button" onClick={resetProject}>
             重置
           </button>
           <button className="primary-button" type="button" onClick={handleExportGcode}>
-            导出 G-code
+            <Download size={16} /> 导出 G-code
           </button>
         </div>
       </header>
@@ -206,24 +222,6 @@ export function EditorPage() {
           <PaperSettingsPanel paper={project.paper} />
           <CalibrationPanel calibration={project.calibration} />
           <ZeroingGuide />
-
-          <section className="panel-section">
-            <h2>测试图案</h2>
-            <div className="button-grid">
-              <button type="button" onClick={() => addTestPattern('rectangle')}>
-                添加 20mm 方框
-              </button>
-              <button type="button" onClick={() => addTestPattern('cross')}>
-                添加十字
-              </button>
-              <button type="button" onClick={addTextObject}>
-                添加测试文本
-              </button>
-              <button type="button" onClick={addChineseSampleTextObject}>
-                添加中文示例
-              </button>
-            </div>
-          </section>
         </aside>
 
         <SvgCanvas
@@ -294,10 +292,12 @@ function ToolButton({
 }: {
   active: boolean;
   disabled?: boolean;
-  icon: IconName;
+  icon: LucideIcon;
   label: string;
   onClick: () => void;
 }) {
+  const Icon = icon;
+
   return (
     <button
       className={active ? 'tool-button tool-button--active' : 'tool-button'}
@@ -305,7 +305,7 @@ function ToolButton({
       type="button"
       onClick={onClick}
     >
-      <Icon name={icon} />
+      <Icon size={18} strokeWidth={2} />
       <span>{label}</span>
     </button>
   );
@@ -343,170 +343,24 @@ function getToolLabel(tool: EditorTool) {
   return '选择';
 }
 
-type IconName =
-  | 'app'
-  | 'axis'
-  | 'corner'
-  | 'cursor'
-  | 'folder'
-  | 'layers'
-  | 'move'
-  | 'pen'
-  | 'redo'
-  | 'settings'
-  | 'text'
-  | 'undo'
-  | 'zoom';
-
 function IconButton({
   disabled,
+  icon,
   label,
-  name,
   onClick,
 }: {
   disabled?: boolean;
+  icon: LucideIcon;
   label: string;
-  name: IconName;
   onClick: () => void;
 }) {
+  const Icon = icon;
+
   return (
     <button className="icon-button" disabled={disabled} type="button" aria-label={label} title={label} onClick={onClick}>
-      <Icon name={name} />
+      <Icon size={18} strokeWidth={2} />
       <span>{label}</span>
     </button>
-  );
-}
-
-function Icon({ name }: { name: IconName }) {
-  const commonProps = {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-  };
-
-  if (name === 'app') {
-    return (
-      <svg {...commonProps}>
-        <path d="M4 4h12v4" />
-        <path d="M4 4v16h16v-8" />
-        <path d="M14 4l6-2-2 6" />
-        <path d="M9 15l9-9" />
-      </svg>
-    );
-  }
-
-  if (name === 'folder') {
-    return (
-      <svg {...commonProps}>
-        <path d="M3 7h7l2 2h9v10H3z" />
-        <path d="M3 7v12" />
-      </svg>
-    );
-  }
-
-  if (name === 'undo' || name === 'redo') {
-    return (
-      <svg {...commonProps}>
-        <path d={name === 'undo' ? 'M9 7H4v5' : 'M15 7h5v5'} />
-        <path d={name === 'undo' ? 'M4 12a8 8 0 1 0 3-6' : 'M20 12a8 8 0 1 1-3-6'} />
-      </svg>
-    );
-  }
-
-  if (name === 'cursor') {
-    return (
-      <svg {...commonProps}>
-        <path d="M5 3l11 9-5 1-3 5z" />
-      </svg>
-    );
-  }
-
-  if (name === 'move') {
-    return (
-      <svg {...commonProps}>
-        <path d="M12 2v20" />
-        <path d="M2 12h20" />
-        <path d="M12 2l3 3" />
-        <path d="M12 2L9 5" />
-        <path d="M12 22l3-3" />
-        <path d="M12 22l-3-3" />
-        <path d="M2 12l3 3" />
-        <path d="M2 12l3-3" />
-        <path d="M22 12l-3 3" />
-        <path d="M22 12l-3-3" />
-      </svg>
-    );
-  }
-
-  if (name === 'zoom') {
-    return (
-      <svg {...commonProps}>
-        <circle cx="10" cy="10" r="6" />
-        <path d="M15 15l5 5" />
-        <path d="M10 7v6" />
-        <path d="M7 10h6" />
-      </svg>
-    );
-  }
-
-  if (name === 'pen' || name === 'corner') {
-    return (
-      <svg {...commonProps}>
-        <path d="M4 20l4-1 10-10-3-3L5 16z" />
-        <path d="M13 6l3 3" />
-      </svg>
-    );
-  }
-
-  if (name === 'text') {
-    return (
-      <svg {...commonProps}>
-        <path d="M4 6h16" />
-        <path d="M12 6v12" />
-        <path d="M8 18h8" />
-      </svg>
-    );
-  }
-
-  if (name === 'layers') {
-    return (
-      <svg {...commonProps}>
-        <path d="M12 3l9 5-9 5-9-5z" />
-        <path d="M3 12l9 5 9-5" />
-        <path d="M3 16l9 5 9-5" />
-      </svg>
-    );
-  }
-
-  if (name === 'axis') {
-    return (
-      <svg {...commonProps}>
-        <path d="M4 18h16" />
-        <path d="M6 16l-2 2 2 2" />
-        <path d="M18 16l2 2-2 2" />
-        <path d="M12 18V6" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg {...commonProps}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2v3" />
-      <path d="M12 19v3" />
-      <path d="M2 12h3" />
-      <path d="M19 12h3" />
-      <path d="M4.9 4.9l2.1 2.1" />
-      <path d="M17 17l2.1 2.1" />
-      <path d="M19.1 4.9 17 7" />
-      <path d="M7 17l-2.1 2.1" />
-    </svg>
   );
 }
 

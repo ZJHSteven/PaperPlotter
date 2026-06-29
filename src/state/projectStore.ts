@@ -40,6 +40,7 @@ type ProjectStoreActions = {
   setPaperPreset: (preset: PaperPreset) => void;
   setPaperOrientation: (orientation: PaperConfig['orientation']) => void;
   setCustomPaperSize: (widthMm: number, heightMm: number) => void;
+  setPaperMargins: (marginsMm: PaperConfig['marginsMm']) => void;
   updateMachineConfig: (patch: Partial<MachineConfig>) => void;
   setCalibrationImageUrl: (imageUrl: string, imageSizePx: { width: number; height: number }) => void;
   setCalibrationImageFromStorage: (
@@ -112,10 +113,10 @@ export const useProjectStore = create<ProjectStore>()(
           if (state.project.paper.preset === 'custom') {
             return commitProjectChange(state, {
               ...state.project,
-              paper: {
-                ...state.project.paper,
-                orientation,
-              },
+            paper: {
+              ...state.project.paper,
+              orientation,
+            },
             });
           }
 
@@ -134,6 +135,18 @@ export const useProjectStore = create<ProjectStore>()(
               orientation: state.project.paper.orientation,
               widthMm,
               heightMm,
+              marginsMm: state.project.paper.marginsMm,
+            },
+          }),
+        );
+      },
+      setPaperMargins: (marginsMm) => {
+        set((state) =>
+          commitProjectChange(state, {
+            ...state.project,
+            paper: {
+              ...state.project.paper,
+              marginsMm,
             },
           }),
         );

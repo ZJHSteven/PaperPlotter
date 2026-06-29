@@ -7,14 +7,12 @@
 export function ZeroingGuide() {
   return (
     <section className="panel-section zeroing-guide" aria-label="G92 归零操作提示">
-      <h2>运行前归零</h2>
-      <ol className="step-list">
-        <li>手动移动笔头到纸张左上角。</li>
-        <li>
-          在外部 sender 中执行 <code>G92 X0 Y0</code>。
-        </li>
-        <li>确认当前位置成为机器工作坐标原点后，再运行导出的 G-code。</li>
-      </ol>
+      <h2>归零 / 设置工作原点</h2>
+      <p className="mini-help">将笔尖移动到纸张左上角内侧位置后，执行下方命令。</p>
+      <button className="command-button" type="button">
+        <code>G92 X0 Y0</code>
+      </button>
+      <p className="origin-status">原点已设置：X0.00 Y0.00</p>
     </section>
   );
 }

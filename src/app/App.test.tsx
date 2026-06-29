@@ -59,19 +59,17 @@ describe('App', () => {
     expect(screen.getByText('纸张尺寸：100 × 150 mm')).toBeInTheDocument();
   });
 
-  it('可以添加十字测试图案并在检查面板显示路径数量', async () => {
+  it('可以通过顶栏绘制按钮添加测试图案并在检查面板显示路径数量', async () => {
     const user = userEvent.setup();
 
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '添加十字' }));
+    await user.click(screen.getByRole('button', { name: '绘制' }));
 
-    expect(screen.getByText('十字')).toBeInTheDocument();
-    expect(screen.getByText('十字测试图案')).toBeInTheDocument();
-    expect(screen.getByText('路径预览：当前对象会导出为 2 条折线路径。')).toBeInTheDocument();
+    expect(screen.getByText('路径预览：当前对象会导出为 1 条折线路径。')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '导出' }));
     expect(screen.getByText('对象数量：2')).toBeInTheDocument();
-    expect(screen.getByText('可导出路径：3')).toBeInTheDocument();
+    expect(screen.getByText('可导出路径：2')).toBeInTheDocument();
   });
 
   it('可以添加测试文本并把文本路径计入导出路径', async () => {
@@ -79,7 +77,7 @@ describe('App', () => {
 
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '添加测试文本' }));
+    await user.click(screen.getByRole('button', { name: '文字' }));
 
     expect(screen.getByText('文本对象')).toBeInTheDocument();
     expect(screen.getByDisplayValue('TEST')).toBeInTheDocument();
@@ -91,9 +89,8 @@ describe('App', () => {
   it('可以添加中文示例并使用中文单线 provider', async () => {
     const user = userEvent.setup();
 
+    useProjectStore.getState().addChineseSampleTextObject();
     render(<App />);
-
-    await user.click(screen.getByRole('button', { name: '添加中文示例' }));
 
     expect(screen.getByDisplayValue('实验报告')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: '字体来源' })).toHaveValue('basic-chinese-stroke');
@@ -121,9 +118,9 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: '导出' }));
 
     expect(screen.getByRole('region', { name: 'G92 归零操作提示' })).toBeInTheDocument();
-    expect(screen.getByText('手动移动笔头到纸张左上角。')).toBeInTheDocument();
+    expect(screen.getByText('将笔尖移动到纸张左上角内侧位置后，执行下方命令。')).toBeInTheDocument();
     expect(screen.getByText('G92 X0 Y0')).toBeInTheDocument();
-    expect(screen.getByText('确认当前位置成为机器工作坐标原点后，再运行导出的 G-code。')).toBeInTheDocument();
+    expect(screen.getByText('原点已设置：X0.00 Y0.00')).toBeInTheDocument();
   });
 
   it('可以生成 Z 粗找和细调 G-code 并保存候选落笔 Z', async () => {
@@ -201,8 +198,10 @@ describe('App', () => {
   it('显示照片标定入口和当前点选提示', () => {
     render(<App />);
 
-    expect(screen.getByRole('button', { name: '导入纸张照片' })).toBeInTheDocument();
-    expect(screen.getByText('先导入一张纸张照片，再按左上、右上、右下、左下点选四角。')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '导入' })).toBeInTheDocument();
+    expect(screen.getByText('拍照并导入')).toBeInTheDocument();
+    expect(screen.getByText('设置四个角点')).toBeInTheDocument();
+    expect(screen.getByText('校正纸张')).toBeInTheDocument();
   });
 
   it('导入照片后画布进入照片像素标定模式', () => {
@@ -214,7 +213,7 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getByText('400 px × 300 px，点击坐标 = 照片 px')).toBeInTheDocument();
-    expect(screen.getByText('请在照片标定视图中点击：左上角（0/4）')).toBeInTheDocument();
+    expect(screen.getByText('下一步：切换“纸角”工具，点击 左上角（0/4）。')).toBeInTheDocument();
     expect(screen.getByText('照片尺寸：400 × 300 px')).toBeInTheDocument();
   });
 
@@ -241,17 +240,17 @@ describe('App', () => {
 
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '添加十字' }));
+    await user.click(screen.getByRole('button', { name: '绘制' }));
 
-    expect(screen.getByText('十字测试图案')).toBeInTheDocument();
+    expect(useProjectStore.getState().project.objects).toHaveLength(2);
 
     await user.click(screen.getByRole('button', { name: '撤销' }));
 
-    expect(screen.queryByText('十字测试图案')).not.toBeInTheDocument();
+    expect(useProjectStore.getState().project.objects).toHaveLength(1);
 
     await user.click(screen.getByRole('button', { name: '重做' }));
 
-    expect(screen.getByText('十字测试图案')).toBeInTheDocument();
+    expect(useProjectStore.getState().project.objects).toHaveLength(2);
   });
 
   it('画布滚轮缩放不需要 Ctrl 键', () => {
@@ -278,8 +277,9 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getByText('210 mm × 297 mm，SVG 坐标单位 = mm')).toBeInTheDocument();
-    expect(screen.getByText('四个纸角已点完，已计算 imageToPaper 透视矩阵。')).toBeInTheDocument();
-    expect(screen.getByText('机器参考线')).toBeInTheDocument();
+    expect(screen.getByText('已设置 4 / 4')).toBeInTheDocument();
+    expect(screen.getByText('透视校正已应用')).toBeInTheDocument();
+    expect(screen.getByText('机器参考线（笔架行程）')).toBeInTheDocument();
     expect(screen.getByText('请在纸面预览中点击机器参考线两端（0/2）。')).toBeInTheDocument();
     expect(useProjectStore.getState().project.calibration.result?.imageToPaperMatrix).toHaveLength(9);
   });

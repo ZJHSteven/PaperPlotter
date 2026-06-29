@@ -28,6 +28,8 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
   const resetMachineAxisLine = useProjectStore((state) => state.resetMachineAxisLine);
   const nextCornerKey = getNextPaperCornerKey(calibration.paperCornersPx);
   const cornerCount = getPaperCornerCount(calibration.paperCornersPx);
+  const imageImported = Boolean(calibration.imageUrl || calibration.imageId);
+  const cornersDone = cornerCount === 4 && Boolean(calibration.result);
   const showDevTestImageButton = import.meta.env.MODE !== 'production';
   const machineAxisDraft = calibration.machineAxisLineDraftPx ?? { axis: 'x' as const };
   const machineAxisPointCount = Number(Boolean(machineAxisDraft.p1)) + Number(Boolean(machineAxisDraft.p2));
@@ -73,7 +75,7 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
 
   return (
     <section className="panel-section">
-      <h2>照片标定</h2>
+      <h2>标定（照片校准）</h2>
       <input
         ref={inputRef}
         className="hidden-file-input"
@@ -81,9 +83,37 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
         accept="image/*"
         onChange={(event) => handleFileChange(event.target.files?.[0])}
       />
-      <button className="secondary-button full-width" type="button" onClick={() => inputRef.current?.click()}>
-        导入纸张照片
-      </button>
+      <ol className="calibration-steps" aria-label="照片标定步骤">
+        <CalibrationStep
+          done={imageImported}
+          index={1}
+          meta={calibration.imageFileName ?? '支持 JPG、PNG、WebP；HEIC 需浏览器可解码'}
+          title="拍照并导入"
+        />
+        <CalibrationStep
+          done={cornersDone}
+          index={2}
+          meta={cornersDone ? '已设置 4 / 4' : `已设置 ${cornerCount} / 4`}
+          title="设置四个角点"
+        />
+        <CalibrationStep
+          done={cornersDone}
+          index={3}
+          meta={cornersDone ? '透视校正已应用' : '四角完成后自动计算'}
+          title="校正纸张"
+        />
+      </ol>
+
+      <div className="inline-actions">
+        <button className="secondary-button full-width" type="button" onClick={() => inputRef.current?.click()}>
+          导入纸张照片
+        </button>
+        {calibration.paperCornersPx ? (
+          <button className="secondary-button full-width" type="button" onClick={resetPaperCorners}>
+            重新标定
+          </button>
+        ) : null}
+      </div>
       {showDevTestImageButton ? (
         <button className="secondary-button full-width dev-only-button" type="button" onClick={loadDevTestImage}>
           载入测试照片
@@ -104,12 +134,6 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
       ) : null}
       {calibration.imageFileName ? <p className="meta-text">照片文件：{calibration.imageFileName}</p> : null}
       {calibration.errorMessage ? <p className="error-text">{calibration.errorMessage}</p> : null}
-
-      {calibration.paperCornersPx ? (
-        <button className="secondary-button full-width" type="button" onClick={resetPaperCorners}>
-          重置纸角
-        </button>
-      ) : null}
 
       {calibration.result ? (
         <div className="sub-panel">
@@ -151,6 +175,29 @@ export function CalibrationPanel({ calibration }: CalibrationPanelProps) {
       height: 300,
     });
   }
+}
+
+function CalibrationStep({
+  done,
+  index,
+  meta,
+  title,
+}: {
+  done: boolean;
+  index: number;
+  meta: string;
+  title: string;
+}) {
+  return (
+    <li className={done ? 'calibration-step calibration-step--done' : 'calibration-step'}>
+      <span className="calibration-step__badge">{done ? '✓' : index}</span>
+      <span>
+        <strong>{title}</strong>
+        <small>{meta}</small>
+      </span>
+      <em>{done ? '完成' : '待做'}</em>
+    </li>
+  );
 }
 
 function createDevCalibrationImageUrl() {

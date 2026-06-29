@@ -141,6 +141,7 @@ export function EditorPage() {
 
   return (
     <main className="app-shell">
+      <h1 className="sr-only">写字机纸面排版与 G-code 生成工具</h1>
       <header className="app-toolbar">
         <div className="brand-block" aria-label="项目标题">
           <span className="brand-mark" aria-hidden="true">
@@ -247,7 +248,6 @@ export function EditorPage() {
           {rightTab === 'z' ? <ZCalibrationPanel config={project.zCalibration} machine={project.machine} /> : null}
           {rightTab === 'export' ? (
             <>
-              <ZeroingGuide />
               <section className="panel-section">
                 <h2>导出前检查</h2>
                 <ul className={validation.ok ? 'check-list' : 'check-list check-list--error'}>

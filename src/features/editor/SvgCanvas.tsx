@@ -327,6 +327,20 @@ function clientPointToSvgPoint(event: {
 }
 
 function clientCoordinatesToSvgPoint(svgElement: SVGSVGElement, clientX: number, clientY: number) {
+  if (typeof svgElement.createSVGPoint !== 'function') {
+    const bounds = svgElement.getBoundingClientRect();
+    const [viewX, viewY, viewWidth, viewHeight] = (svgElement.getAttribute('viewBox') ?? '0 0 1 1')
+      .split(/\s+/)
+      .map(Number);
+    const safeWidth = bounds.width || 1;
+    const safeHeight = bounds.height || 1;
+
+    return {
+      x: Math.round((viewX + ((clientX - bounds.left) / safeWidth) * viewWidth) * 100) / 100,
+      y: Math.round((viewY + ((clientY - bounds.top) / safeHeight) * viewHeight) * 100) / 100,
+    };
+  }
+
   const svgPoint = svgElement.createSVGPoint();
   svgPoint.x = clientX;
   svgPoint.y = clientY;

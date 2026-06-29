@@ -35,13 +35,22 @@ export function PaperSettingsPanel({ paper }: PaperSettingsPanelProps) {
 
       <label className="field">
         <span>方向</span>
-        <select
-          value={paper.orientation}
-          onChange={(event) => setPaperOrientation(event.target.value as PaperConfig['orientation'])}
-        >
-          <option value="portrait">纵向</option>
-          <option value="landscape">横向</option>
-        </select>
+        <span className="segmented-control" role="group" aria-label="纸张方向">
+          <button
+            className={paper.orientation === 'portrait' ? 'segmented-control__item segmented-control__item--active' : 'segmented-control__item'}
+            type="button"
+            onClick={() => setPaperOrientation('portrait')}
+          >
+            纵向
+          </button>
+          <button
+            className={paper.orientation === 'landscape' ? 'segmented-control__item segmented-control__item--active' : 'segmented-control__item'}
+            type="button"
+            onClick={() => setPaperOrientation('landscape')}
+          >
+            横向
+          </button>
+        </span>
       </label>
 
       <div className="field-grid">

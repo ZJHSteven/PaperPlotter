@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
@@ -23,7 +23,7 @@ describe('App', () => {
 
     render(<App />);
 
-    await user.selectOptions(screen.getByLabelText('方向'), 'landscape');
+    await user.click(screen.getByRole('button', { name: '横向' }));
 
     expect(screen.getByText('297 mm × 210 mm，SVG 坐标单位 = mm')).toBeInTheDocument();
   });
@@ -194,8 +194,8 @@ describe('App', () => {
     ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
-    expect(screen.getByDisplayValue('当前浏览器不支持 Web Serial，请使用外部 sender。')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '连接串口' })).toBeDisabled();
+    expect(screen.getByDisplayValue('当前浏览器不支持 Web Serial')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '连接' })).toBeDisabled();
   });
 
   it('显示照片标定入口和当前点选提示', () => {
@@ -234,6 +234,34 @@ describe('App', () => {
       'data-tool',
       'paper-corners',
     );
+  });
+
+  it('支持撤销和重做项目内对象变更', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '添加十字' }));
+
+    expect(screen.getByText('十字测试图案')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '撤销' }));
+
+    expect(screen.queryByText('十字测试图案')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '重做' }));
+
+    expect(screen.getByText('十字测试图案')).toBeInTheDocument();
+  });
+
+  it('画布滚轮缩放不需要 Ctrl 键', () => {
+    render(<App />);
+
+    const svg = screen.getByRole('img', { name: '纸张毫米坐标预览' });
+
+    fireEvent.wheel(svg, { deltaY: -100 });
+
+    return waitFor(() => expect(screen.getByText('110%')).toBeInTheDocument());
   });
 
   it('四角点选完成后回到纸面毫米预览并显示标定完成提示', () => {

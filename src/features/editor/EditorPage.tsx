@@ -11,14 +11,20 @@ import { SelectionPanel } from './SelectionPanel';
 import { ZeroingGuide } from './ZeroingGuide';
 import { ZCalibrationPanel } from '../z-calibration/ZCalibrationPanel';
 
+export type EditorTool = 'select' | 'pan' | 'paper-corners' | 'machine-axis';
+type RightPanelTab = 'object' | 'machine' | 'z' | 'export';
+
 /**
  * 编辑器主页面。
  *
- * 这里先实现计划书中的“工作台”骨架：
- * 左侧是纸张/标定入口，中间是 SVG 纸面，右侧是机器参数和导出检查入口。
+ * 页面现在按“工具型桌面软件”组织：
+ * 顶栏放项目级命令和工具模式，底栏放状态信息，中间三列在一个视口内等高。
+ * 这样用户标定纸张时，视线主要停留在画布和当前步骤，不需要在长页面里上下滚动找按钮。
  */
 export function EditorPage() {
   const [exportMessage, setExportMessage] = useState<string>('尚未导出。');
+  const [activeTool, setActiveTool] = useState<EditorTool>('select');
+  const [rightTab, setRightTab] = useState<RightPanelTab>('object');
   const project = useProjectStore((state) => state.project);
   const selectedObjectId = useProjectStore((state) => state.selectedObjectId);
   const addTestPattern = useProjectStore((state) => state.addTestPattern);
@@ -28,6 +34,7 @@ export function EditorPage() {
   const selectedObject = project.objects.find((object) => object.id === selectedObjectId);
   const gcodeJob = projectToGcodeJob(project);
   const validation = validateGcodeJob(gcodeJob);
+  const machineAxisDone = Boolean(project.calibration.machineAxisLinePx);
 
   function handleExportGcode() {
     if (!validation.ok) {
@@ -42,15 +49,35 @@ export function EditorPage() {
 
   return (
     <main className="app-shell">
-      <header className="top-bar">
-        <div>
-          <p className="eyebrow">PaperPlotter MVP</p>
-          <h1>写字机纸面排版与 G-code 生成工具</h1>
+      <header className="app-toolbar">
+        <div className="brand-block" aria-label="项目标题">
+          <span className="brand-mark">P</span>
+          <div>
+            <p className="eyebrow">PaperPlotter</p>
+            <h1>写字机纸面排版与 G-code 生成工具</h1>
+          </div>
         </div>
+
+        <div className="tool-strip" aria-label="编辑工具栏">
+          <ToolButton active={activeTool === 'select'} label="选择" onClick={() => setActiveTool('select')} />
+          <ToolButton active={activeTool === 'pan'} label="移动" onClick={() => setActiveTool('pan')} />
+          <ToolButton
+            active={activeTool === 'paper-corners'}
+            label="纸角"
+            onClick={() => setActiveTool('paper-corners')}
+          />
+          <ToolButton
+            active={activeTool === 'machine-axis'}
+            disabled={!project.calibration.result}
+            label="参考线"
+            onClick={() => setActiveTool('machine-axis')}
+          />
+        </div>
+
         <div className="top-bar__actions">
-          <span className="status-pill">本地自动保存</span>
+          <span className="status-pill">已保存</span>
           <button className="secondary-button" type="button" onClick={resetProject}>
-            重置项目
+            重置
           </button>
           <button className="primary-button" type="button" onClick={handleExportGcode}>
             导出 G-code
@@ -94,6 +121,7 @@ export function EditorPage() {
         </aside>
 
         <SvgCanvas
+          activeTool={activeTool}
           paper={project.paper}
           calibration={project.calibration}
           objects={project.objects}
@@ -101,35 +129,106 @@ export function EditorPage() {
         />
 
         <aside className="side-panel" aria-label="机器与导出设置">
-          <SelectionPanel object={selectedObject} />
+          <div className="side-tabs" aria-label="右侧属性页">
+            <TabButton active={rightTab === 'object'} label="对象" onClick={() => setRightTab('object')} />
+            <TabButton active={rightTab === 'machine'} label="机器" onClick={() => setRightTab('machine')} />
+            <TabButton active={rightTab === 'z'} label="Z 标定" onClick={() => setRightTab('z')} />
+            <TabButton active={rightTab === 'export'} label="导出" onClick={() => setRightTab('export')} />
+          </div>
 
-          <MachineSettingsPanel machine={project.machine} />
-
-          <ZeroingGuide />
-
-          <ZCalibrationPanel config={project.zCalibration} machine={project.machine} />
-
-          <section className="panel-section">
-            <h2>导出前检查</h2>
-            <ul className={validation.ok ? 'check-list' : 'check-list check-list--error'}>
-              <li>纸张尺寸：{project.paper.widthMm} × {project.paper.heightMm} mm</li>
-              <li>对象数量：{project.objects.length}</li>
-              <li>可导出路径：{gcodeJob.paths.length}</li>
-              <li>归零提示：运行前执行 G92 X0 Y0</li>
-            </ul>
-            {validation.issues.length > 0 ? (
-              <ul className="validation-list">
-                {validation.issues.map((issue) => (
-                  <li key={`${issue.code}-${issue.message}`}>{issue.message}</li>
-                ))}
-              </ul>
-            ) : null}
-            <p className="hint">{exportMessage}</p>
-          </section>
+          {rightTab === 'object' ? <SelectionPanel object={selectedObject} /> : null}
+          {rightTab === 'machine' ? <MachineSettingsPanel machine={project.machine} /> : null}
+          {rightTab === 'z' ? <ZCalibrationPanel config={project.zCalibration} machine={project.machine} /> : null}
+          {rightTab === 'export' ? (
+            <>
+              <ZeroingGuide />
+              <section className="panel-section">
+                <h2>导出前检查</h2>
+                <ul className={validation.ok ? 'check-list' : 'check-list check-list--error'}>
+                  <li>纸张尺寸：{project.paper.widthMm} × {project.paper.heightMm} mm</li>
+                  <li>对象数量：{project.objects.length}</li>
+                  <li>可导出路径：{gcodeJob.paths.length}</li>
+                  <li>归零提示：运行前执行 G92 X0 Y0</li>
+                </ul>
+                {validation.issues.length > 0 ? (
+                  <ul className="validation-list">
+                    {validation.issues.map((issue) => (
+                      <li key={`${issue.code}-${issue.message}`}>{issue.message}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <p className="hint">{exportMessage}</p>
+              </section>
+            </>
+          ) : null}
         </aside>
       </section>
+
+      <footer className="status-bar" aria-label="底部状态栏">
+        <span>工具：{getToolLabel(activeTool)}</span>
+        <span>纸张：{project.paper.widthMm} × {project.paper.heightMm} mm</span>
+        <span>纸角：{project.calibration.result ? '已标定' : '未完成'}</span>
+        <span>参考线：{machineAxisDone ? '已标定' : '未完成'}</span>
+        <span>对象：{project.objects.length}</span>
+        <span>路径：{gcodeJob.paths.length}</span>
+      </footer>
     </main>
   );
+}
+
+function ToolButton({
+  active,
+  disabled,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={active ? 'tool-button tool-button--active' : 'tool-button'}
+      disabled={disabled}
+      type="button"
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+}
+
+function TabButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button className={active ? 'tab-button tab-button--active' : 'tab-button'} type="button" onClick={onClick}>
+      {label}
+    </button>
+  );
+}
+
+function getToolLabel(tool: EditorTool) {
+  if (tool === 'pan') {
+    return '移动';
+  }
+
+  if (tool === 'paper-corners') {
+    return '纸角标定';
+  }
+
+  if (tool === 'machine-axis') {
+    return '机器参考线';
+  }
+
+  return '选择';
 }
 
 /**

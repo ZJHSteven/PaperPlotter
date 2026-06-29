@@ -55,6 +55,7 @@ describe('App', () => {
     await user.type(screen.getByRole('spinbutton', { name: '高度 mm' }), '150');
 
     expect(screen.getByText('100 mm × 150 mm，SVG 坐标单位 = mm')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '导出' }));
     expect(screen.getByText('纸张尺寸：100 × 150 mm')).toBeInTheDocument();
   });
 
@@ -66,9 +67,10 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: '添加十字' }));
 
     expect(screen.getByText('十字')).toBeInTheDocument();
-    expect(screen.getByText('对象数量：2')).toBeInTheDocument();
     expect(screen.getByText('十字测试图案')).toBeInTheDocument();
     expect(screen.getByText('路径预览：当前对象会导出为 2 条折线路径。')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '导出' }));
+    expect(screen.getByText('对象数量：2')).toBeInTheDocument();
     expect(screen.getByText('可导出路径：3')).toBeInTheDocument();
   });
 
@@ -82,6 +84,7 @@ describe('App', () => {
     expect(screen.getByText('文本对象')).toBeInTheDocument();
     expect(screen.getByDisplayValue('TEST')).toBeInTheDocument();
     expect(screen.getByText('文本：TEST')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '导出' }));
     expect(screen.getByText('可导出路径：9')).toBeInTheDocument();
   });
 
@@ -95,6 +98,7 @@ describe('App', () => {
     expect(screen.getByDisplayValue('实验报告')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: '字体来源' })).toHaveValue('basic-chinese-stroke');
     expect(screen.getByText('文本：实验报告')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '导出' }));
     expect(screen.getByText('可导出路径：24')).toBeInTheDocument();
   });
 
@@ -104,12 +108,17 @@ describe('App', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: '导出 G-code' }));
+    await user.click(screen.getByRole('button', { name: '导出' }));
 
     expect(screen.getByText('已生成 G-code：1 条路径。')).toBeInTheDocument();
   });
 
-  it('显示运行前 G92 归零操作提示', () => {
+  it('显示运行前 G92 归零操作提示', async () => {
+    const user = userEvent.setup();
+
     render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '导出' }));
 
     expect(screen.getByRole('region', { name: 'G92 归零操作提示' })).toBeInTheDocument();
     expect(screen.getByText('手动移动笔头到纸张左上角。')).toBeInTheDocument();
@@ -122,6 +131,7 @@ describe('App', () => {
 
     render(<App />);
 
+    await user.click(screen.getByRole('button', { name: 'Z 标定' }));
     await user.click(screen.getByRole('button', { name: '下降一步并点一下' }));
 
     expect(screen.getByDisplayValue(/Z 粗找/)).toBeInTheDocument();
@@ -137,8 +147,12 @@ describe('App', () => {
     expect(useProjectStore.getState().project.machine.penDownZ).toBe(-1.35);
   });
 
-  it('暴露 MVP 要求的关键机器参数设置', () => {
+  it('暴露 MVP 要求的关键机器参数设置', async () => {
+    const user = userEvent.setup();
+
     render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '机器' }));
 
     for (const label of [
       '工作区宽 mm',
@@ -161,8 +175,12 @@ describe('App', () => {
     }
   });
 
-  it('暴露单点 Z 标定要求的可调参数', () => {
+  it('暴露单点 Z 标定要求的可调参数', async () => {
+    const user = userEvent.setup();
+
     render(<App />);
+
+    await user.click(screen.getByRole('button', { name: 'Z 标定' }));
 
     for (const label of [
       '粗找步长 mm',
@@ -196,6 +214,24 @@ describe('App', () => {
     expect(screen.getByText('400 px × 300 px，点击坐标 = 照片 px')).toBeInTheDocument();
     expect(screen.getByText('请在照片标定视图中点击：左上角（0/4）')).toBeInTheDocument();
     expect(screen.getByText('照片尺寸：400 × 300 px')).toBeInTheDocument();
+  });
+
+  it('提供显式工具栏并支持切换纸角标定工具', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    expect(screen.getByRole('button', { name: '选择' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '移动' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '纸角' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '纸角' }));
+
+    expect(screen.getByText('工具：纸角标定')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '纸张毫米坐标预览' })).toHaveAttribute(
+      'data-tool',
+      'paper-corners',
+    );
   });
 
   it('四角点选完成后回到纸面毫米预览并显示标定完成提示', () => {

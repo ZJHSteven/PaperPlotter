@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from 'react';
 import type { CalibrationConfig, DesignObject, PaperConfig } from '../../types/project';
 import { useProjectStore } from '../../state/projectStore';
 import { PaperLayer } from './PaperLayer';
 import { TestPatternLayer } from './TestPatternLayer';
 import { CalibrationLayer } from './CalibrationLayer';
+import type { EditorTool } from './EditorPage';
 
 type SvgCanvasProps = {
+  activeTool: EditorTool;
   paper: PaperConfig;
   calibration: CalibrationConfig;
   objects: DesignObject[];
@@ -18,7 +20,7 @@ type SvgCanvasProps = {
  * SVG 的 viewBox 直接使用毫米作为逻辑单位。
  * 这样后续路径预览和 G-code 坐标可以共用同一套纸面数据，不需要 UI 像素和毫米反复换算。
  */
-export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: SvgCanvasProps) {
+export function SvgCanvas({ activeTool, paper, calibration, objects, selectedObjectId }: SvgCanvasProps) {
   const selectObject = useProjectStore((state) => state.selectObject);
   const moveObject = useProjectStore((state) => state.moveObject);
   const addPaperCornerPoint = useProjectStore((state) => state.addPaperCornerPoint);
@@ -38,9 +40,11 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
   } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [panMm, setPanMm] = useState({ x: 0, y: 0 });
+  const [spacePressed, setSpacePressed] = useState(false);
   const calibrationMode = Boolean(
     calibration.imageUrl && calibration.imageSizePx && !calibration.result,
   );
+  const effectiveTool = spacePressed ? 'pan' : activeTool;
   const baseView = useMemo(
     () => ({
       x: calibrationMode ? 0 : -paddingMm,
@@ -79,6 +83,30 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
     visibleView.width,
     visibleView.height,
   ].join(' ');
+  const markerScale = Math.max(visibleView.width, visibleView.height) / 110;
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.code === 'Space' && event.target === document.body) {
+        event.preventDefault();
+        setSpacePressed(true);
+      }
+    }
+
+    function handleKeyUp(event: KeyboardEvent) {
+      if (event.code === 'Space') {
+        setSpacePressed(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   function changeZoom(nextZoom: number) {
     setZoom(clampZoom(nextZoom));
@@ -91,6 +119,10 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
 
   function handlePointerDown(event: PointerEvent<SVGSVGElement>) {
     if (event.button !== 0) {
+      return;
+    }
+
+    if (effectiveTool !== 'pan') {
       return;
     }
 
@@ -146,18 +178,18 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
       return;
     }
 
-    if (calibrationMode) {
+    if (activeTool === 'paper-corners' && calibrationMode) {
       addPaperCornerPoint(clientPointToSvgPoint(event));
       return;
     }
 
-    if (calibration.result && !calibration.machineAxisLinePx) {
+    if (activeTool === 'machine-axis' && calibration.result && !calibration.machineAxisLinePx) {
       addMachineAxisPointFromPaper(clientPointToSvgPoint(event));
     }
   }
 
   function handleObjectPointerDown(event: PointerEvent<SVGGElement>, object: DesignObject) {
-    if (event.button !== 0 || !('xMm' in object) || !('yMm' in object)) {
+    if (activeTool !== 'select' || event.button !== 0 || !('xMm' in object) || !('yMm' in object)) {
       return;
     }
 
@@ -175,6 +207,28 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
       objectStartY: object.yMm,
     };
     svgRef.current?.setPointerCapture(event.pointerId);
+  }
+
+  function handleWheel(event: WheelEvent<SVGSVGElement>) {
+    if (!event.ctrlKey) {
+      return;
+    }
+
+    event.preventDefault();
+    const beforePoint = clientPointToSvgPoint(event);
+    const nextZoom = clampZoom(zoom * (event.deltaY > 0 ? 0.9 : 1.1));
+    const nextWidth = baseView.width / nextZoom;
+    const nextHeight = baseView.height / nextZoom;
+    const beforeRatioX = (beforePoint.x - visibleView.x) / visibleView.width;
+    const beforeRatioY = (beforePoint.y - visibleView.y) / visibleView.height;
+    const nextCenterX = beforePoint.x + nextWidth / 2 - beforeRatioX * nextWidth;
+    const nextCenterY = beforePoint.y + nextHeight / 2 - beforeRatioY * nextHeight;
+
+    setZoom(nextZoom);
+    setPanMm({
+      x: nextCenterX - (baseView.x + baseView.width / 2),
+      y: nextCenterY - (baseView.y + baseView.height / 2),
+    });
   }
 
   return (
@@ -208,12 +262,14 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
           role="img"
           aria-label="纸张毫米坐标预览"
           className="paper-svg"
+          data-tool={effectiveTool}
           viewBox={viewBox}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onClick={handleCanvasClick}
+          onWheel={handleWheel}
         >
           {calibrationMode ? null : <PaperLayer paper={paper} />}
           <CalibrationLayer
@@ -221,6 +277,7 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
             paperWidthMm={paper.widthMm}
             paperHeightMm={paper.heightMm}
             calibrationMode={calibrationMode}
+            markerScale={markerScale}
           />
           {calibrationMode
             ? null
@@ -238,7 +295,11 @@ export function SvgCanvas({ paper, calibration, objects, selectedObjectId }: Svg
   );
 }
 
-function clientPointToSvgPoint(event: PointerEvent<SVGSVGElement>) {
+function clientPointToSvgPoint(event: {
+  currentTarget: SVGSVGElement;
+  clientX: number;
+  clientY: number;
+}) {
   const svgElement = event.currentTarget;
   const svgPoint = svgElement.createSVGPoint();
   svgPoint.x = event.clientX;

@@ -9,6 +9,7 @@ type CalibrationLayerProps = {
   paperWidthMm: number;
   paperHeightMm: number;
   calibrationMode: boolean;
+  markerScale: number;
 };
 
 /**
@@ -22,6 +23,7 @@ export function CalibrationLayer({
   paperWidthMm,
   paperHeightMm,
   calibrationMode,
+  markerScale,
 }: CalibrationLayerProps) {
   const corners = calibration.paperCornersPx;
   const [correctedImageUrl, setCorrectedImageUrl] = useState<string>();
@@ -104,10 +106,12 @@ export function CalibrationLayer({
 
               return (
                 <g key={key} className="corner-marker">
-                  <circle cx={displayPoint.x} cy={displayPoint.y} r={2.2} />
-                  <text x={displayPoint.x + 3} y={displayPoint.y - 3}>
-                    {PAPER_CORNER_LABELS[key]}
+                  <circle cx={displayPoint.x} cy={displayPoint.y} r={markerScale} />
+                  <circle className="corner-marker__core" cx={displayPoint.x} cy={displayPoint.y} r={markerScale * 0.28} />
+                  <text x={displayPoint.x + markerScale * 1.25} y={displayPoint.y - markerScale * 1.05}>
+                    {getCornerIndex(key)}
                   </text>
+                  <title>{PAPER_CORNER_LABELS[key]}</title>
                 </g>
               );
             },
@@ -119,6 +123,22 @@ export function CalibrationLayer({
       ) : null}
     </g>
   );
+}
+
+function getCornerIndex(key: keyof typeof PAPER_CORNER_LABELS) {
+  if (key === 'topLeft') {
+    return '1';
+  }
+
+  if (key === 'topRight') {
+    return '2';
+  }
+
+  if (key === 'bottomRight') {
+    return '3';
+  }
+
+  return '4';
 }
 
 function MachineAxisLine({

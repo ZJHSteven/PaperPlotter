@@ -2,10 +2,10 @@
 
 ## 当前结论（必须最新）
 
-- 现状：软件侧 MVP 已完成，第 1 至第 10 步均已实现并通过本机验证；项目等待真实写字机实机验收。
-- 已完成：Vite + React + TypeScript 配置；Zustand 持久化项目状态；纸张/机器/Z 标定设置面板；SVG 毫米纸面预览；默认 20mm 方框测试对象；画布缩放、重置和拖拽平移；响应式布局；添加十字测试图案；对象选择/拖动；测试图案到折线路径转换；基础 G-code 生成、导出按钮和安全检查；照片原始 px 标定模式；四角 homography 计算；校正后 PNG 纸面背景；机器参考线 X/Y 选择与点选；paperPointToMachinePoint；paperPathsToMachinePaths 导出映射；G92 归零提示；Z 点粗找与线细调；FakeStrokeFontProvider；BasicChineseStrokeFontProvider；中文“实验报告”预览与导出；Vitest 单元/组件测试。
-- 正在做：实机验收准备。
-- 下一步：用户用外部 sender 执行导出的 `.gcode`：先跑 20mm 方框/十字，再跑中文示例；记录是否与纸面预览一致，以及 Z 标定选出的落笔高度是否稳定。
+- 现状：软件侧 MVP 已完成，第 1 至第 10 步均已实现并通过本机验证；正在补齐 README、本地实操验收入口和最终实机验收。
+- 已完成：Vite + React + TypeScript 配置；Zustand 持久化项目状态；纸张/机器/Z 标定设置面板；SVG 毫米纸面预览；默认 20mm 方框测试对象；画布缩放、重置和拖拽平移；响应式布局；添加十字测试图案；对象选择/拖动；测试图案到折线路径转换；基础 G-code 生成、导出按钮和安全检查；照片原始 px 标定模式；四角 homography 计算；校正后 PNG 纸面背景；机器参考线 X/Y 选择与点选；paperPointToMachinePoint；paperPathsToMachinePaths 导出映射；G92 归零提示；Z 点粗找与线细调；FakeStrokeFontProvider；BasicChineseStrokeFontProvider；中文“实验报告”预览与导出；Vitest 单元/组件测试；README 项目说明、启动部署说明和实机验收流程；GitHub 仓库 Description 已通过 `gh repo edit` 写入。
+- 正在做：启动本地开发服务器，交给用户浏览器实操验收。
+- 下一步：用户先在浏览器中检查页面与导出流程；随后用外部 sender 执行导出的 `.gcode`：先跑 20mm 方框/十字，再跑中文示例；记录是否与纸面预览一致，以及 Z 标定选出的落笔高度是否稳定。
 
 ## 关键决策与理由（防止“吃书”）
 
@@ -24,6 +24,7 @@
 - 决策M：FakeStrokeFontProvider 只用于验证文本到单线路径的闭环，不追求字形美观。（原因：真实中文笔画字库放到第 10 步单独接入，避免影响前 9 步坐标/G-code 主链路。）
 - 决策N：第一种中文 provider 使用内置低保真单线字形覆盖验收词，而不是立即接入大型第三方中文字库。（原因：MVP 验收重点是单线 stroke 路径和坐标/G-code 闭环，字形美观可以在后续字体效果优化阶段迭代。）
 - 决策O：机器 Z 方向和 Z 标定 Z 方向保持同步。（原因：同一台机器不应在“机器设置”和“Z 标定流程”中出现互相矛盾的 Z 正方向。）
+- 决策P：README 面向 GitHub 展示和用户上手，不重复 `计划书.md` 的全部技术细节。（原因：公开首页需要让访问者快速理解项目用途、启动方式、部署方式和实机验收流程；详细设计仍以 `计划书.md`、`PLANS.md`、`PROGRESS.md` 为准。）
 
 ## 常见坑 / 复现方法
 
@@ -38,3 +39,4 @@
 - 坑9：Z “下降一步”的正负取决于 `zPositiveDirection`；当前封装在 `stepZTowardPaper`，避免 UI 里写死 Z 变小。
 - 坑10：软件侧测试只能证明 G-code 生成和坐标映射逻辑，不能替代真实机器验收；最终还要确认外部 sender 的坐标模式、单位模式和用户是否已执行 `G92 X0 Y0`。
 - 坑11：内置中文 provider 只是 MVP 验收字形，覆盖“你好”“实验报告”；后续要写更多中文，需要扩展字形数据或接入更完整的 stroke 字库。
+- 坑12：GitHub Pages 如果部署在仓库子路径，可能需要配置 Vite 的 `base`；Cloudflare Pages、Vercel、Netlify 这类根路径静态部署通常只需要 `npm run build` 和 `dist/`。

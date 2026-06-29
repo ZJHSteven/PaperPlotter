@@ -302,6 +302,14 @@ textarea {
   line-height: 1.45;
 }
 
+.serial-log {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #34455f;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .hint {
   margin: 3px 0 0;
   border-left: 3px solid #f59e0b;

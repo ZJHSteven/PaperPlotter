@@ -194,6 +194,8 @@ describe('App', () => {
     ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+    expect(screen.getByDisplayValue('当前浏览器不支持 Web Serial，请使用外部 sender。')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '连接串口' })).toBeDisabled();
   });
 
   it('显示照片标定入口和当前点选提示', () => {

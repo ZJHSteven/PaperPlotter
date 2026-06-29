@@ -1,11 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useProjectStore } from '../../state/projectStore';
 import type { MachineConfig, ZCalibrationConfig } from '../../types/project';
-import {
-  isWebSerialSupported,
-  requestWebSerialConnection,
-  type WebSerialConnection,
-} from '../serial/webSerial';
+import { useSerialStore } from '../serial/serialStore';
 import {
   generateCoarseDotProbeGcode,
   generateFineLineScanGcode,
@@ -32,57 +28,26 @@ export function ZCalibrationPanel({ config, machine }: ZCalibrationPanelProps) {
   const [contactApproxZ, setContactApproxZ] = useState<number>();
   const [finePlan, setFinePlan] = useState<FineScanPlan>();
   const [gcode, setGcode] = useState('');
-  const [baudRate, setBaudRate] = useState(115200);
-  const [serialStatus, setSerialStatus] = useState(
-    isWebSerialSupported() ? '未连接串口。' : '当前浏览器不支持 Web Serial，请使用外部 sender。',
-  );
-  const [serialLog, setSerialLog] = useState<string[]>([]);
-  const serialConnectionRef = useRef<WebSerialConnection | null>(null);
-  const webSerialSupported = isWebSerialSupported();
+  const serial = useSerialStore();
+  const webSerialSupported = serial.status !== 'unsupported';
 
-  async function connectSerial() {
-    try {
-      serialConnectionRef.current = await requestWebSerialConnection(baudRate);
-      setSerialStatus(`串口已连接，波特率 ${baudRate}。`);
-      appendSerialLog('已连接串口。');
-    } catch (error) {
-      setSerialStatus(error instanceof Error ? error.message : '连接串口失败。');
-    }
-  }
-
-  async function disconnectSerial() {
-    try {
-      await serialConnectionRef.current?.close();
-      serialConnectionRef.current = null;
-      setSerialStatus('串口已断开。');
-      appendSerialLog('已断开串口。');
-    } catch (error) {
-      setSerialStatus(error instanceof Error ? error.message : '断开串口失败。');
-    }
-  }
-
-  async function sendCurrentGcodeToSerial() {
+  function sendCurrentGcodeToSerial() {
     if (!gcode.trim()) {
-      setSerialStatus('请先生成 Z 标定 G-code，再发送到串口。');
       return;
     }
 
-    if (!serialConnectionRef.current) {
-      setSerialStatus('请先连接串口。');
-      return;
-    }
-
-    try {
-      await serialConnectionRef.current.writeText(gcode.endsWith('\n') ? gcode : `${gcode}\n`);
-      appendSerialLog(`已发送 ${gcode.split('\n').filter(Boolean).length} 行 Z 标定 G-code。`);
-      setSerialStatus('当前 Z 标定 G-code 已发送。');
-    } catch (error) {
-      setSerialStatus(error instanceof Error ? error.message : '发送 G-code 失败。');
-    }
+    void serial.writeText(gcode);
   }
 
-  function appendSerialLog(message: string) {
-    setSerialLog((current) => [`${new Date().toLocaleTimeString()} ${message}`, ...current].slice(0, 6));
+  function connectSelectedSerialPort() {
+    if (!serial.selectedPortId) {
+      void serial.requestPortAndSelect().then(() => {
+        void useSerialStore.getState().connectSelectedPort();
+      });
+      return;
+    }
+
+    void serial.connectSelectedPort();
   }
 
   function generateNextDot() {
@@ -233,29 +198,50 @@ export function ZCalibrationPanel({ config, machine }: ZCalibrationPanelProps) {
       <div className="sub-panel">
         <h3>Web Serial 实机发送</h3>
         <div className="field-grid">
-          <NumberField label="串口波特率" min={1} value={baudRate} onChange={setBaudRate} />
+          <NumberField label="串口波特率" min={1} value={serial.baudRate} onChange={serial.setBaudRate} />
           <label className="field">
-            <span>串口状态</span>
-            <input readOnly value={serialStatus} />
+            <span>已授权串口</span>
+            <select
+              disabled={!webSerialSupported}
+              value={serial.selectedPortId ?? ''}
+              onChange={(event) => serial.selectPort(event.target.value)}
+            >
+              <option value="">未选择端口</option>
+              {serial.ports.map((port) => (
+                <option key={port.id} value={port.id}>
+                  {port.label}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
+        <label className="field">
+          <span>串口状态</span>
+          <input readOnly value={serial.statusMessage} />
+        </label>
         <div className="button-grid">
-          <button disabled={!webSerialSupported} type="button" onClick={connectSerial}>
-            连接串口
+          <button disabled={!webSerialSupported} type="button" onClick={() => void serial.refreshAuthorizedPorts()}>
+            刷新已授权端口
           </button>
-          <button disabled={!webSerialSupported} type="button" onClick={sendCurrentGcodeToSerial}>
+          <button disabled={!webSerialSupported} type="button" onClick={() => void serial.requestPortAndSelect()}>
+            选择新端口
+          </button>
+          <button disabled={!webSerialSupported || serial.status === 'connecting'} type="button" onClick={connectSelectedSerialPort}>
+            连接
+          </button>
+          <button disabled={!webSerialSupported || !gcode.trim()} type="button" onClick={sendCurrentGcodeToSerial}>
             发送当前 Z G-code
           </button>
-          <button disabled={!webSerialSupported} type="button" onClick={disconnectSerial}>
+          <button disabled={!webSerialSupported} type="button" onClick={() => void serial.disconnect()}>
             断开串口
           </button>
         </div>
         <p className="hint">
           Web Serial 只用于 Z 标定实机验证；如果浏览器不支持或发送器已占用串口，请继续复制上方 G-code 到外部 sender。
         </p>
-        {serialLog.length > 0 ? (
+        {serial.log.length > 0 ? (
           <ul className="serial-log" aria-label="串口发送日志">
-            {serialLog.map((line) => (
+            {serial.log.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>

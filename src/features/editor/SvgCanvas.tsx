@@ -12,6 +12,7 @@ type SvgCanvasProps = {
   calibration: CalibrationConfig;
   objects: DesignObject[];
   selectedObjectId?: string;
+  onHotkeyScopeChange?: (active: boolean) => void;
 };
 
 /**
@@ -20,7 +21,14 @@ type SvgCanvasProps = {
  * SVG 的 viewBox 直接使用毫米作为逻辑单位。
  * 这样后续路径预览和 G-code 坐标可以共用同一套纸面数据，不需要 UI 像素和毫米反复换算。
  */
-export function SvgCanvas({ activeTool, paper, calibration, objects, selectedObjectId }: SvgCanvasProps) {
+export function SvgCanvas({
+  activeTool,
+  paper,
+  calibration,
+  objects,
+  selectedObjectId,
+  onHotkeyScopeChange,
+}: SvgCanvasProps) {
   const selectObject = useProjectStore((state) => state.selectObject);
   const moveObject = useProjectStore((state) => state.moveObject);
   const addPaperCornerPoint = useProjectStore((state) => state.addPaperCornerPoint);
@@ -38,6 +46,7 @@ export function SvgCanvas({ activeTool, paper, calibration, objects, selectedObj
     objectStartX?: number;
     objectStartY?: number;
   } | null>(null);
+  const skipNextClickRef = useRef(false);
   const [zoom, setZoom] = useState(1);
   const [panMm, setPanMm] = useState({ x: 0, y: 0 });
   const [spacePressed, setSpacePressed] = useState(false);
@@ -134,6 +143,7 @@ export function SvgCanvas({ activeTool, paper, calibration, objects, selectedObj
       startPanX: panMm.x,
       startPanY: panMm.y,
     };
+    skipNextClickRef.current = true;
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -174,6 +184,11 @@ export function SvgCanvas({ activeTool, paper, calibration, objects, selectedObj
   }
 
   function handleCanvasClick(event: PointerEvent<SVGSVGElement>) {
+    if (skipNextClickRef.current || effectiveTool === 'pan') {
+      skipNextClickRef.current = false;
+      return;
+    }
+
     if ((event.target as Element).closest('.test-pattern')) {
       return;
     }
@@ -189,7 +204,7 @@ export function SvgCanvas({ activeTool, paper, calibration, objects, selectedObj
   }
 
   function handleObjectPointerDown(event: PointerEvent<SVGGElement>, object: DesignObject) {
-    if (activeTool !== 'select' || event.button !== 0 || !('xMm' in object) || !('yMm' in object)) {
+    if (effectiveTool !== 'select' || event.button !== 0 || !('xMm' in object) || !('yMm' in object)) {
       return;
     }
 
@@ -210,13 +225,19 @@ export function SvgCanvas({ activeTool, paper, calibration, objects, selectedObj
   }
 
   function handleWheel(event: WheelEvent<SVGSVGElement>) {
-    if (!event.ctrlKey) {
+    event.preventDefault();
+    zoomAtClientPoint(event.clientX, event.clientY, event.deltaY > 0 ? 0.9 : 1.1);
+  }
+
+  function zoomAtClientPoint(clientX: number, clientY: number, zoomMultiplier: number) {
+    const svgElement = svgRef.current;
+
+    if (!svgElement) {
       return;
     }
 
-    event.preventDefault();
-    const beforePoint = clientPointToSvgPoint(event);
-    const nextZoom = clampZoom(zoom * (event.deltaY > 0 ? 0.9 : 1.1));
+    const beforePoint = clientCoordinatesToSvgPoint(svgElement, clientX, clientY);
+    const nextZoom = clampZoom(zoom * zoomMultiplier);
     const nextWidth = baseView.width / nextZoom;
     const nextHeight = baseView.height / nextZoom;
     const beforeRatioX = (beforePoint.x - visibleView.x) / visibleView.width;
@@ -268,6 +289,8 @@ export function SvgCanvas({ activeTool, paper, calibration, objects, selectedObj
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
+          onPointerEnter={() => onHotkeyScopeChange?.(true)}
+          onPointerLeave={() => onHotkeyScopeChange?.(false)}
           onClick={handleCanvasClick}
           onWheel={handleWheel}
         >
@@ -300,10 +323,13 @@ function clientPointToSvgPoint(event: {
   clientX: number;
   clientY: number;
 }) {
-  const svgElement = event.currentTarget;
+  return clientCoordinatesToSvgPoint(event.currentTarget, event.clientX, event.clientY);
+}
+
+function clientCoordinatesToSvgPoint(svgElement: SVGSVGElement, clientX: number, clientY: number) {
   const svgPoint = svgElement.createSVGPoint();
-  svgPoint.x = event.clientX;
-  svgPoint.y = event.clientY;
+  svgPoint.x = clientX;
+  svgPoint.y = clientY;
   const transformedPoint = svgPoint.matrixTransform(svgElement.getScreenCTM()?.inverse());
 
   return {

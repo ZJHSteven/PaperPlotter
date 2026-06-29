@@ -25,6 +25,15 @@ import {
 type ProjectStoreState = {
   project: ProjectFile;
   selectedObjectId?: string;
+  history: {
+    past: ProjectSnapshot[];
+    future: ProjectSnapshot[];
+  };
+};
+
+type ProjectSnapshot = {
+  project: ProjectFile;
+  selectedObjectId?: string;
 };
 
 type ProjectStoreActions = {
@@ -57,6 +66,8 @@ type ProjectStoreActions = {
   selectObject: (objectId?: string) => void;
   updateObject: (objectId: string, patch: Partial<DesignObject>) => void;
   moveObject: (objectId: string, xMm: number, yMm: number) => void;
+  undo: () => void;
+  redo: () => void;
   resetProject: () => void;
 };
 
@@ -74,53 +85,49 @@ export const useProjectStore = create<ProjectStore>()(
     (set) => ({
       project: createDefaultProject(),
       selectedObjectId: 'test-rectangle-20mm',
+      history: {
+        past: [],
+        future: [],
+      },
       setPaperPreset: (preset) => {
         set((state) => {
           if (preset === 'custom') {
-            return {
-              project: {
-                ...state.project,
-                paper: {
-                  ...state.project.paper,
-                  preset,
-                },
+            return commitProjectChange(state, {
+              ...state.project,
+              paper: {
+                ...state.project.paper,
+                preset,
               },
-            };
+            });
           }
 
-          return {
-            project: {
-              ...state.project,
-              paper: createPresetPaperConfig(preset, state.project.paper.orientation),
-            },
-          };
+          return commitProjectChange(state, {
+            ...state.project,
+            paper: createPresetPaperConfig(preset, state.project.paper.orientation),
+          });
         });
       },
       setPaperOrientation: (orientation) => {
         set((state) => {
           if (state.project.paper.preset === 'custom') {
-            return {
-              project: {
-                ...state.project,
-                paper: {
-                  ...state.project.paper,
-                  orientation,
-                },
+            return commitProjectChange(state, {
+              ...state.project,
+              paper: {
+                ...state.project.paper,
+                orientation,
               },
-            };
+            });
           }
 
-          return {
-            project: {
-              ...state.project,
-              paper: createPresetPaperConfig(state.project.paper.preset, orientation),
-            },
-          };
+          return commitProjectChange(state, {
+            ...state.project,
+            paper: createPresetPaperConfig(state.project.paper.preset, orientation),
+          });
         });
       },
       setCustomPaperSize: (widthMm, heightMm) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             paper: {
               preset: 'custom',
@@ -128,12 +135,12 @@ export const useProjectStore = create<ProjectStore>()(
               widthMm,
               heightMm,
             },
-          },
-        }));
+          }),
+        );
       },
       updateMachineConfig: (patch) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             machine: {
               ...state.project.machine,
@@ -145,12 +152,12 @@ export const useProjectStore = create<ProjectStore>()(
                   zPositiveDirection: patch.zPositiveDirection,
                 }
               : state.project.zCalibration,
-          },
-        }));
+          }),
+        );
       },
       setCalibrationImageUrl: (imageUrl, imageSizePx) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             calibration: {
               ...state.project.calibration,
@@ -165,12 +172,12 @@ export const useProjectStore = create<ProjectStore>()(
               result: undefined,
               errorMessage: undefined,
             },
-          },
-        }));
+          }),
+        );
       },
       setCalibrationImageFromStorage: (image, imageSizePx) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             calibration: {
               ...state.project.calibration,
@@ -185,8 +192,8 @@ export const useProjectStore = create<ProjectStore>()(
               result: undefined,
               errorMessage: undefined,
             },
-          },
-        }));
+          }),
+        );
       },
       restoreCalibrationImageUrl: (imageUrl) => {
         set((state) => ({
@@ -241,35 +248,31 @@ export const useProjectStore = create<ProjectStore>()(
                 }
               : undefined;
 
-            return {
-              project: {
-                ...state.project,
-                calibration: {
-                  ...state.project.calibration,
-                  paperCornersPx: nextCorners as PaperCornersPx,
-                  result,
-                  errorMessage: undefined,
-                },
+            return commitProjectChange(state, {
+              ...state.project,
+              calibration: {
+                ...state.project.calibration,
+                paperCornersPx: nextCorners as PaperCornersPx,
+                result,
+                errorMessage: undefined,
               },
-            };
+            });
           } catch (error) {
-            return {
-              project: {
-                ...state.project,
-                calibration: {
-                  ...state.project.calibration,
-                  paperCornersPx: nextCorners as PaperCornersPx,
-                  result: undefined,
-                  errorMessage: error instanceof Error ? error.message : '纸角标定失败。',
-                },
+            return commitProjectChange(state, {
+              ...state.project,
+              calibration: {
+                ...state.project.calibration,
+                paperCornersPx: nextCorners as PaperCornersPx,
+                result: undefined,
+                errorMessage: error instanceof Error ? error.message : '纸角标定失败。',
               },
-            };
+            });
           }
         });
       },
       resetPaperCorners: () => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             calibration: {
               ...state.project.calibration,
@@ -279,12 +282,12 @@ export const useProjectStore = create<ProjectStore>()(
               result: undefined,
               errorMessage: undefined,
             },
-          },
-        }));
+          }),
+        );
       },
       setMachineAxisReferenceAxis: (axis) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             calibration: {
               ...state.project.calibration,
@@ -293,8 +296,8 @@ export const useProjectStore = create<ProjectStore>()(
               },
               machineAxisLinePx: undefined,
             },
-          },
-        }));
+          }),
+        );
       },
       addMachineAxisPointFromPaper: (point) => {
         set((state) => {
@@ -315,17 +318,15 @@ export const useProjectStore = create<ProjectStore>()(
                 : { axis: draft.axis, p1: imagePoint };
 
             if (!nextDraft.p1 || !nextDraft.p2) {
-              return {
-                project: {
-                  ...state.project,
-                  calibration: {
-                    ...calibration,
-                    machineAxisLineDraftPx: nextDraft,
-                    machineAxisLinePx: undefined,
-                    errorMessage: undefined,
-                  },
+              return commitProjectChange(state, {
+                ...state.project,
+                calibration: {
+                  ...calibration,
+                  machineAxisLineDraftPx: nextDraft,
+                  machineAxisLinePx: undefined,
+                  errorMessage: undefined,
                 },
-              };
+              });
             }
 
             const machineAxisLinePx = {
@@ -339,39 +340,35 @@ export const useProjectStore = create<ProjectStore>()(
               state.project.machine,
             );
 
-            return {
-              project: {
-                ...state.project,
-                calibration: {
-                  ...calibration,
-                  machineAxisLineDraftPx: nextDraft,
-                  machineAxisLinePx,
-                  result: {
-                    ...calibration.result,
-                    machineAxisAngleRad: machineAxis.angleRad,
-                    paperToMachineMatrix,
-                    calibratedAt: Date.now(),
-                  },
-                  errorMessage: undefined,
+            return commitProjectChange(state, {
+              ...state.project,
+              calibration: {
+                ...calibration,
+                machineAxisLineDraftPx: nextDraft,
+                machineAxisLinePx,
+                result: {
+                  ...calibration.result,
+                  machineAxisAngleRad: machineAxis.angleRad,
+                  paperToMachineMatrix,
+                  calibratedAt: Date.now(),
                 },
+                errorMessage: undefined,
               },
-            };
+            });
           } catch (error) {
-            return {
-              project: {
-                ...state.project,
-                calibration: {
-                  ...calibration,
-                  errorMessage: error instanceof Error ? error.message : '机器参考线标定失败。',
-                },
+            return commitProjectChange(state, {
+              ...state.project,
+              calibration: {
+                ...calibration,
+                errorMessage: error instanceof Error ? error.message : '机器参考线标定失败。',
               },
-            };
+            });
           }
         });
       },
       resetMachineAxisLine: () => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             calibration: {
               ...state.project.calibration,
@@ -393,12 +390,12 @@ export const useProjectStore = create<ProjectStore>()(
                 : undefined,
               errorMessage: undefined,
             },
-          },
-        }));
+          }),
+        );
       },
       updateZCalibrationConfig: (patch) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             machine: patch.zPositiveDirection
               ? {
@@ -410,12 +407,12 @@ export const useProjectStore = create<ProjectStore>()(
               ...state.project.zCalibration,
               ...patch,
             },
-          },
-        }));
+          }),
+        );
       },
       saveBasePenDownZ: (z) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             machine: {
               ...state.project.machine,
@@ -433,8 +430,8 @@ export const useProjectStore = create<ProjectStore>()(
                 },
               ],
             },
-          },
-        }));
+          }),
+        );
       },
       addTestPattern: (kind) => {
         set((state) => {
@@ -448,13 +445,14 @@ export const useProjectStore = create<ProjectStore>()(
             heightMm: kind === 'line-scan' ? 9 : 20,
           };
 
-          return {
-            project: {
+          return commitProjectChange(
+            state,
+            {
               ...state.project,
               objects: [...state.project.objects, object],
             },
-            selectedObjectId: object.id,
-          };
+            object.id,
+          );
         });
       },
       addTextObject: () => {
@@ -474,13 +472,14 @@ export const useProjectStore = create<ProjectStore>()(
             writingMode: 'horizontal' as const,
           };
 
-          return {
-            project: {
+          return commitProjectChange(
+            state,
+            {
               ...state.project,
               objects: [...state.project.objects, object],
             },
-            selectedObjectId: object.id,
-          };
+            object.id,
+          );
         });
       },
       addChineseSampleTextObject: () => {
@@ -500,21 +499,22 @@ export const useProjectStore = create<ProjectStore>()(
             writingMode: 'horizontal' as const,
           };
 
-          return {
-            project: {
+          return commitProjectChange(
+            state,
+            {
               ...state.project,
               objects: [...state.project.objects, object],
             },
-            selectedObjectId: object.id,
-          };
+            object.id,
+          );
         });
       },
       selectObject: (objectId) => {
         set({ selectedObjectId: objectId });
       },
       updateObject: (objectId, patch) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             objects: state.project.objects.map((object) => {
               if (object.id !== objectId) {
@@ -526,12 +526,12 @@ export const useProjectStore = create<ProjectStore>()(
                 state.project.paper,
               );
             }),
-          },
-        }));
+          }),
+        );
       },
       moveObject: (objectId, xMm, yMm) => {
-        set((state) => ({
-          project: {
+        set((state) =>
+          commitProjectChange(state, {
             ...state.project,
             objects: state.project.objects.map((object) => {
               if (object.id !== objectId || !('xMm' in object) || !('yMm' in object)) {
@@ -543,11 +543,54 @@ export const useProjectStore = create<ProjectStore>()(
                 state.project.paper,
               );
             }),
-          },
-        }));
+          }),
+        );
+      },
+      undo: () => {
+        set((state) => {
+          const previous = state.history.past.at(-1);
+
+          if (!previous) {
+            return state;
+          }
+
+          return {
+            project: previous.project,
+            selectedObjectId: previous.selectedObjectId,
+            history: {
+              past: state.history.past.slice(0, -1),
+              future: [snapshotProjectState(state), ...state.history.future].slice(0, 50),
+            },
+          };
+        });
+      },
+      redo: () => {
+        set((state) => {
+          const next = state.history.future[0];
+
+          if (!next) {
+            return state;
+          }
+
+          return {
+            project: next.project,
+            selectedObjectId: next.selectedObjectId,
+            history: {
+              past: [...state.history.past, snapshotProjectState(state)].slice(-50),
+              future: state.history.future.slice(1),
+            },
+          };
+        });
       },
       resetProject: () => {
-        set({ project: createDefaultProject(), selectedObjectId: 'test-rectangle-20mm' });
+        set({
+          project: createDefaultProject(),
+          selectedObjectId: 'test-rectangle-20mm',
+          history: {
+            past: [],
+            future: [],
+          },
+        });
       },
     }),
     {
@@ -565,6 +608,35 @@ export const useProjectStore = create<ProjectStore>()(
     },
   ),
 );
+
+/**
+ * 提交一次会改变项目文件的操作，并把旧项目放入撤销栈。
+ *
+ * 这里记录的是完整 `ProjectFile` 快照，而不是记录“反向补丁”。
+ * 对初版工具来说，项目文件体量很小，快照方案更直观，也能统一覆盖：
+ * 纸张设置、照片导入、纸角点选、机器参考线、对象修改和 Z 参数保存。
+ */
+function commitProjectChange(
+  state: ProjectStoreState,
+  project: ProjectFile,
+  selectedObjectId = state.selectedObjectId,
+) {
+  return {
+    project,
+    selectedObjectId,
+    history: {
+      past: [...state.history.past, snapshotProjectState(state)].slice(-50),
+      future: [],
+    },
+  };
+}
+
+function snapshotProjectState(state: ProjectStoreState): ProjectSnapshot {
+  return {
+    project: state.project,
+    selectedObjectId: state.selectedObjectId,
+  };
+}
 
 function addCornerToDraft(
   current: Partial<PaperCornersPx> | undefined,
